@@ -21,9 +21,11 @@ type Client struct {
 }
 
 const (
-	defaultBaseURL  = "https://api.ui.com"
-	defaultRetries  = 3
-	defaultRetryWait = 5 * time.Second
+	defaultBaseURL      = "https://api.ui.com"
+	defaultRetries      = 3
+	defaultRetryWait    = 5 * time.Second
+	defaultTimeout      = 30 * time.Second
+	maxErrorBodySize    = 64 * 1024
 )
 
 var retryAfterRegex = regexp.MustCompile(`retry after ([\d.]+)s`)
@@ -32,7 +34,7 @@ func NewClient(apiKey string) *Client {
 	return &Client{
 		BaseURL:    defaultBaseURL,
 		APIKey:     apiKey,
-		HTTPClient: &http.Client{},
+		HTTPClient: &http.Client{Timeout: defaultTimeout},
 		MaxRetries: defaultRetries,
 	}
 }
@@ -49,7 +51,10 @@ func (c *Client) do(ctx context.Context, method, path string, result interface{}
 
 		var apiErr *APIError
 		if errors.As(err, &apiErr) && apiErr.StatusCode == 429 && attempt < maxAttempts-1 {
-			wait := parseRetryAfter(apiErr.Message)
+			wait := parseRetryAfterHeader(apiErr.RetryAfterHeader)
+			if wait == 0 {
+				wait = parseRetryAfterBody(apiErr.Message)
+			}
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -83,7 +88,7 @@ func (c *Client) doOnce(ctx context.Context, method, path string, result interfa
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
 		msg := string(body)
 
 		var sentinel error
@@ -104,18 +109,15 @@ func (c *Client) doOnce(ctx context.Context, method, path string, result interfa
 			sentinel = ErrBadGateway
 		}
 
+		apiErr := &APIError{
+			StatusCode:       resp.StatusCode,
+			Message:          msg,
+			RetryAfterHeader: resp.Header.Get("Retry-After"),
+		}
 		if sentinel != nil {
-			return &APIError{
-				StatusCode: resp.StatusCode,
-				Message:    msg,
-				Err:        sentinel,
-			}
+			apiErr.Err = sentinel
 		}
-
-		return &APIError{
-			StatusCode: resp.StatusCode,
-			Message:    msg,
-		}
+		return apiErr
 	}
 
 	if result != nil {
@@ -127,7 +129,17 @@ func (c *Client) doOnce(ctx context.Context, method, path string, result interfa
 	return nil
 }
 
-func parseRetryAfter(msg string) time.Duration {
+func parseRetryAfterHeader(header string) time.Duration {
+	if header == "" {
+		return 0
+	}
+	if secs, err := strconv.Atoi(header); err == nil {
+		return time.Duration(secs) * time.Second
+	}
+	return 0
+}
+
+func parseRetryAfterBody(msg string) time.Duration {
 	matches := retryAfterRegex.FindStringSubmatch(msg)
 	if len(matches) == 2 {
 		if secs, err := strconv.ParseFloat(matches[1], 64); err == nil {

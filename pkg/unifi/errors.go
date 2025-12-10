@@ -16,9 +16,10 @@ var (
 )
 
 type APIError struct {
-	StatusCode int
-	Message    string
-	Err        error
+	StatusCode       int
+	Message          string
+	RetryAfterHeader string
+	Err              error
 }
 
 func (e *APIError) Error() string {

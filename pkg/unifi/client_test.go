@@ -530,7 +530,7 @@ func TestRateLimitContextCancellation(t *testing.T) {
 	}
 }
 
-func TestParseRetryAfter(t *testing.T) {
+func TestParseRetryAfterBody(t *testing.T) {
 	tests := []struct {
 		msg      string
 		expected time.Duration
@@ -544,10 +544,107 @@ func TestParseRetryAfter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.msg, func(t *testing.T) {
-			got := parseRetryAfter(tt.msg)
+			got := parseRetryAfterBody(tt.msg)
 			if got != tt.expected {
-				t.Errorf("parseRetryAfter(%q) = %v, want %v", tt.msg, got, tt.expected)
+				t.Errorf("parseRetryAfterBody(%q) = %v, want %v", tt.msg, got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestParseRetryAfterHeader(t *testing.T) {
+	tests := []struct {
+		header   string
+		expected time.Duration
+	}{
+		{"5", 5 * time.Second},
+		{"60", 60 * time.Second},
+		{"0", 0},
+		{"", 0},
+		{"invalid", 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.header, func(t *testing.T) {
+			got := parseRetryAfterHeader(tt.header)
+			if got != tt.expected {
+				t.Errorf("parseRetryAfterHeader(%q) = %v, want %v", tt.header, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestRateLimitRetryWithHeader(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount < 2 {
+			w.Header().Set("Retry-After", "1")
+			w.WriteHeader(429)
+			w.Write([]byte(`{"message":"rate limited"}`))
+			return
+		}
+		resp := map[string]any{
+			"data":           []map[string]any{{"id": "host-1"}},
+			"httpStatusCode": 200,
+			"traceId":        "trace-123",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-key")
+	client.BaseURL = server.URL
+
+	start := time.Now()
+	resp, err := client.ListHosts(context.Background(), nil)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if callCount != 2 {
+		t.Errorf("expected 2 API calls, got %d", callCount)
+	}
+	if len(resp.Hosts) != 1 {
+		t.Errorf("expected 1 host, got %d", len(resp.Hosts))
+	}
+	if elapsed < 1*time.Second {
+		t.Errorf("expected retry to wait at least 1s from header, got %v", elapsed)
+	}
+}
+
+func TestDefaultTimeout(t *testing.T) {
+	client := NewClient("test-key")
+	if client.HTTPClient.Timeout != 30*time.Second {
+		t.Errorf("expected default timeout of 30s, got %v", client.HTTPClient.Timeout)
+	}
+}
+
+func TestRetryAfterHeaderInAPIError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Retry-After", "120")
+		w.WriteHeader(429)
+		w.Write([]byte(`{"message":"rate limited"}`))
+	}))
+	defer server.Close()
+
+	client := NewClient("test-key")
+	client.BaseURL = server.URL
+	client.MaxRetries = 0
+
+	_, err := client.ListHosts(context.Background(), nil)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatal("expected APIError")
+	}
+	if apiErr.RetryAfterHeader != "120" {
+		t.Errorf("expected RetryAfterHeader '120', got %q", apiErr.RetryAfterHeader)
 	}
 }

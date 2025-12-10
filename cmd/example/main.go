@@ -3,39 +3,35 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/resnickio/unifi-go-sdk/pkg/unifi"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file")
-		return
-	}
-
 	apiKey := os.Getenv("UNIFI_API_KEY")
 	if apiKey == "" {
-		fmt.Println("UNIFI_API_KEY not set")
-		return
+		log.Fatal("UNIFI_API_KEY is required")
 	}
 
 	client := unifi.NewClient(apiKey)
 
 	hosts, err := client.ListAllHosts(context.Background())
 	if err != nil {
-		fmt.Println("Error:", err)
-		return
+		log.Fatalf("Error listing hosts: %v", err)
 	}
 
-	// Get first host by ID
-	host, err := client.GetHost(context.Background(), hosts[0].ID)
-	if err != nil {
-		fmt.Println("Error getting host:", err)
-		return
+	fmt.Printf("Found %d hosts\n", len(hosts))
+	for _, host := range hosts {
+		fmt.Printf("  Host: %s (%s)\n", host.ID, host.Type)
 	}
 
-	fmt.Printf("Got host: %s (%s)\n", host.Host.ReportedState.Name, host.Host.ID)
+	if len(hosts) > 0 {
+		host, err := client.GetHost(context.Background(), hosts[0].ID)
+		if err != nil {
+			log.Fatalf("Error getting host: %v", err)
+		}
+		fmt.Printf("Got host: %s (%s)\n", host.Host.ReportedState.Name, host.Host.ID)
+	}
 }
