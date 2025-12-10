@@ -1,5 +1,10 @@
 # UniFi Go SDK
 
+[![CI](https://github.com/resnickio/unifi-go-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/resnickio/unifi-go-sdk/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/resnickio/unifi-go-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/resnickio/unifi-go-sdk)
+[![Go Report Card](https://goreportcard.com/badge/github.com/resnickio/unifi-go-sdk)](https://goreportcard.com/report/github.com/resnickio/unifi-go-sdk)
+[![Go Reference](https://pkg.go.dev/badge/github.com/resnickio/unifi-go-sdk.svg)](https://pkg.go.dev/github.com/resnickio/unifi-go-sdk)
+
 Go SDK for the [UniFi Site Manager API](https://developer.ui.com/site-manager-api/gettingstarted).
 
 ## Installation
