@@ -8,6 +8,8 @@ import (
 var (
 	ErrBadRequest   = errors.New("bad request")
 	ErrUnauthorized = errors.New("unauthorized")
+	ErrForbidden    = errors.New("forbidden")
+	ErrNotFound     = errors.New("not found")
 	ErrRateLimited  = errors.New("rate limited")
 	ErrServerError  = errors.New("server error")
 	ErrBadGateway   = errors.New("bad gateway")

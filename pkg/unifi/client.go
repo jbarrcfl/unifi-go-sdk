@@ -55,6 +55,10 @@ func (c *Client) do(ctx context.Context, method, path string, result interface{}
 			sentinel = ErrBadRequest
 		case 401:
 			sentinel = ErrUnauthorized
+		case 403:
+			sentinel = ErrForbidden
+		case 404:
+			sentinel = ErrNotFound
 		case 429:
 			sentinel = ErrRateLimited
 		case 500:
