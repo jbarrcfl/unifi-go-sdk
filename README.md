@@ -99,9 +99,19 @@ if errors.As(err, &apiErr) {
 }
 ```
 
+## Rate Limiting
+
+The SDK automatically retries requests that receive a 429 (rate limited) response. By default, it will retry up to 3 times, using the retry delay specified by the API.
+
+```go
+client := unifi.NewClient("your-api-key")
+client.MaxRetries = 5 // increase retries
+client.MaxRetries = 0 // disable retries
+```
+
 ## Custom HTTP Client
 
-You can customize the HTTP client for timeouts, retries, or proxies:
+You can customize the HTTP client for timeouts or proxies:
 
 ```go
 client := unifi.NewClient("your-api-key")

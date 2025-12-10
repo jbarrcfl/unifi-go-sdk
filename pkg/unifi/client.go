@@ -3,35 +3,72 @@ package unifi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
+	"time"
 )
 
 type Client struct {
 	BaseURL    string
 	APIKey     string
 	HTTPClient *http.Client
+	MaxRetries int
 }
 
 const (
-	defaultBaseURL = "https://api.ui.com"
+	defaultBaseURL  = "https://api.ui.com"
+	defaultRetries  = 3
+	defaultRetryWait = 5 * time.Second
 )
+
+var retryAfterRegex = regexp.MustCompile(`retry after ([\d.]+)s`)
 
 func NewClient(apiKey string) *Client {
 	return &Client{
 		BaseURL:    defaultBaseURL,
 		APIKey:     apiKey,
 		HTTPClient: &http.Client{},
+		MaxRetries: defaultRetries,
 	}
 }
 
 func (c *Client) do(ctx context.Context, method, path string, result interface{}) error {
-	url := c.BaseURL + path
+	var lastErr error
+	maxAttempts := c.MaxRetries + 1
 
-	req, err := http.NewRequestWithContext(ctx, method, url, nil)
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		err := c.doOnce(ctx, method, path, result)
+		if err == nil {
+			return nil
+		}
+
+		var apiErr *APIError
+		if errors.As(err, &apiErr) && apiErr.StatusCode == 429 && attempt < maxAttempts-1 {
+			wait := parseRetryAfter(apiErr.Message)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(wait):
+				lastErr = err
+				continue
+			}
+		}
+
+		return err
+	}
+
+	return lastErr
+}
+
+func (c *Client) doOnce(ctx context.Context, method, path string, result interface{}) error {
+	reqURL := c.BaseURL + path
+
+	req, err := http.NewRequestWithContext(ctx, method, reqURL, nil)
 	if err != nil {
 		return fmt.Errorf("creating request: %w", err)
 	}
@@ -88,6 +125,16 @@ func (c *Client) do(ctx context.Context, method, path string, result interface{}
 	}
 
 	return nil
+}
+
+func parseRetryAfter(msg string) time.Duration {
+	matches := retryAfterRegex.FindStringSubmatch(msg)
+	if len(matches) == 2 {
+		if secs, err := strconv.ParseFloat(matches[1], 64); err == nil {
+			return time.Duration(secs * float64(time.Second))
+		}
+	}
+	return defaultRetryWait
 }
 
 func (c *Client) ListHosts(ctx context.Context, opts *ListHostsOptions) (*ListHostsResponse, error) {

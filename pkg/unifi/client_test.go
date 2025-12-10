@@ -198,6 +198,7 @@ func TestErrorHandling(t *testing.T) {
 
 			client := NewClient("test-key")
 			client.BaseURL = server.URL
+			client.MaxRetries = 0
 
 			_, err := client.ListHosts(context.Background(), nil)
 			if err == nil {
@@ -441,5 +442,112 @@ func TestNetworkError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "executing request") {
 		t.Errorf("expected executing request error, got: %v", err)
+	}
+}
+
+func TestRateLimitRetry(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount < 3 {
+			w.WriteHeader(429)
+			w.Write([]byte(`{"code":"rate_limit","httpStatusCode":429,"message":"rate limit exceeded, retry after 0.01s"}`))
+			return
+		}
+		resp := map[string]any{
+			"data":           []map[string]any{{"id": "host-1"}},
+			"httpStatusCode": 200,
+			"traceId":        "trace-123",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-key")
+	client.BaseURL = server.URL
+
+	resp, err := client.ListHosts(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if callCount != 3 {
+		t.Errorf("expected 3 API calls, got %d", callCount)
+	}
+	if len(resp.Hosts) != 1 {
+		t.Errorf("expected 1 host, got %d", len(resp.Hosts))
+	}
+}
+
+func TestRateLimitExhausted(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.WriteHeader(429)
+		w.Write([]byte(`{"code":"rate_limit","httpStatusCode":429,"message":"rate limit exceeded, retry after 0.01s"}`))
+	}))
+	defer server.Close()
+
+	client := NewClient("test-key")
+	client.BaseURL = server.URL
+	client.MaxRetries = 2
+
+	_, err := client.ListHosts(context.Background(), nil)
+	if err == nil {
+		t.Fatal("expected error after exhausting retries")
+	}
+
+	if !errors.Is(err, ErrRateLimited) {
+		t.Errorf("expected ErrRateLimited, got %v", err)
+	}
+
+	if callCount != 3 {
+		t.Errorf("expected 3 API calls (1 + 2 retries), got %d", callCount)
+	}
+}
+
+func TestRateLimitContextCancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(429)
+		w.Write([]byte(`{"code":"rate_limit","httpStatusCode":429,"message":"rate limit exceeded, retry after 10s"}`))
+	}))
+	defer server.Close()
+
+	client := NewClient("test-key")
+	client.BaseURL = server.URL
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	_, err := client.ListHosts(ctx, nil)
+	if err == nil {
+		t.Fatal("expected error due to context timeout")
+	}
+
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("expected context.DeadlineExceeded, got %v", err)
+	}
+}
+
+func TestParseRetryAfter(t *testing.T) {
+	tests := []struct {
+		msg      string
+		expected time.Duration
+	}{
+		{`{"message":"rate limit exceeded, retry after 5.372786998s"}`, 5372786998 * time.Nanosecond},
+		{`{"message":"rate limit exceeded, retry after 1s"}`, 1 * time.Second},
+		{`{"message":"rate limit exceeded, retry after 0.5s"}`, 500 * time.Millisecond},
+		{`{"message":"some other error"}`, 5 * time.Second},
+		{`invalid`, 5 * time.Second},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			got := parseRetryAfter(tt.msg)
+			if got != tt.expected {
+				t.Errorf("parseRetryAfter(%q) = %v, want %v", tt.msg, got, tt.expected)
+			}
+		})
 	}
 }
