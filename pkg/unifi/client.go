@@ -13,6 +13,16 @@ import (
 	"time"
 )
 
+type SiteManagerClient interface {
+	ListHosts(ctx context.Context, opts *ListHostsOptions) (*ListHostsResponse, error)
+	ListAllHosts(ctx context.Context) ([]Host, error)
+	GetHost(ctx context.Context, id string) (*GetHostResponse, error)
+	ListSites(ctx context.Context, opts *ListSitesOptions) (*ListSitesResponse, error)
+	ListAllSites(ctx context.Context) ([]Site, error)
+}
+
+var _ SiteManagerClient = (*Client)(nil)
+
 type Client struct {
 	BaseURL    string
 	APIKey     string

@@ -4,6 +4,10 @@
 
 Go SDK for the [UniFi Site Manager API](https://developer.ui.com/site-manager-api/gettingstarted).
 
+## Purpose
+
+This SDK is designed to support a Terraform provider for UniFi infrastructure management. Architectural decisions—such as reactive rate limiting, typed responses with pointer fields for nullable values, and sentinel errors—reflect Terraform provider requirements. While the SDK can be used standalone, its primary goal is enabling declarative infrastructure-as-code for UniFi deployments.
+
 ## Installation
 
 ```bash
