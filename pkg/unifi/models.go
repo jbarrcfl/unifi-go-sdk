@@ -189,6 +189,12 @@ type ReportedState struct {
 	ConsolesOnSameLocalNetwork []string       `json:"consolesOnSameLocalNetwork"`
 	UnadoptedUnifiOSDevices    []string       `json:"unadoptedUnifiOSDevices"`
 	Features                   Features       `json:"features"`
+	// Network Server specific fields
+	DeviceID            string  `json:"deviceId"`
+	FirmwareVersion     *string `json:"firmware_version"`
+	HardwareID          string  `json:"hardware_id"`
+	InformPort          int     `json:"inform_port"`
+	OverrideInformHost  bool    `json:"override_inform_host"`
 }
 
 type Host struct {
@@ -201,7 +207,7 @@ type Host struct {
 	RegistrationTime          string         `json:"registrationTime"`
 	LastConnectionStateChange string         `json:"lastConnectionStateChange"`
 	LatestBackupTime          string         `json:"latestBackupTime"`
-	UserData                  UserData       `json:"userData"`
+	UserData                  *UserData      `json:"userData"`
 	ReportedState             *ReportedState `json:"reportedState"`
 }
 
