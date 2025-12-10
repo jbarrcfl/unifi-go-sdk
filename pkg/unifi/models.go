@@ -125,9 +125,37 @@ type App struct {
 }
 
 type UIDB struct {
-	GUID   string            `json:"guid"`
+	GUID   *string           `json:"guid"`
+	IconID string            `json:"iconId"`
 	ID     string            `json:"id"`
 	Images map[string]string `json:"images"`
+}
+
+type Device struct {
+	ID             string  `json:"id"`
+	MAC            string  `json:"mac"`
+	Name           string  `json:"name"`
+	Model          string  `json:"model"`
+	Shortname      string  `json:"shortname"`
+	IP             string  `json:"ip"`
+	ProductLine    string  `json:"productLine"`
+	Status         string  `json:"status"`
+	Version        string  `json:"version"`
+	FirmwareStatus string  `json:"firmwareStatus"`
+	UpdateAvailable *string `json:"updateAvailable"`
+	IsConsole      bool    `json:"isConsole"`
+	IsManaged      bool    `json:"isManaged"`
+	StartupTime    *string `json:"startupTime"`
+	AdoptionTime   *string `json:"adoptionTime"`
+	Note           *string `json:"note"`
+	UIDB           UIDB    `json:"uidb"`
+}
+
+type HostDevices struct {
+	HostID    string   `json:"hostId"`
+	HostName  string   `json:"hostName"`
+	Devices   []Device `json:"devices"`
+	UpdatedAt string   `json:"updatedAt"`
 }
 
 type Features struct {
@@ -307,4 +335,16 @@ type ListSitesResponse struct {
 	Sites     []Site
 	TraceID   string
 	NextToken string
+}
+
+type ListDevicesOptions struct {
+	HostIDs   []string
+	PageSize  int
+	NextToken string
+}
+
+type ListDevicesResponse struct {
+	HostDevices []HostDevices
+	TraceID     string
+	NextToken   string
 }

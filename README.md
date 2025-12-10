@@ -68,6 +68,8 @@ func main() {
 | `GetHost(ctx, id)` | Get a single host by ID |
 | `ListSites(ctx, opts)` | List sites with pagination |
 | `ListAllSites(ctx)` | List all sites (handles pagination) |
+| `ListDevices(ctx, opts)` | List devices grouped by host |
+| `ListAllDevices(ctx)` | List all devices (handles pagination) |
 
 ## Error Handling
 

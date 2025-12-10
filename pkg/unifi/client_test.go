@@ -173,6 +173,91 @@ func TestListSites(t *testing.T) {
 	}
 }
 
+func TestListDevices(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/devices" {
+			t.Errorf("expected path '/v1/devices', got %q", r.URL.Path)
+		}
+
+		resp := map[string]any{
+			"data": []map[string]any{
+				{
+					"hostId":   "host-1",
+					"hostName": "UDM-SE",
+					"devices": []map[string]any{
+						{
+							"id":          "device-1",
+							"mac":         "AA:BB:CC:DD:EE:FF",
+							"name":        "U6 Pro",
+							"model":       "U6 Pro",
+							"productLine": "network",
+							"status":      "online",
+						},
+					},
+					"updatedAt": "2025-01-01T00:00:00Z",
+				},
+			},
+			"httpStatusCode": 200,
+			"traceId":        "trace-devices",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-key")
+	client.BaseURL = server.URL
+
+	resp, err := client.ListDevices(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(resp.HostDevices) != 1 {
+		t.Errorf("expected 1 host, got %d", len(resp.HostDevices))
+	}
+	if resp.HostDevices[0].HostID != "host-1" {
+		t.Errorf("expected host ID 'host-1', got %q", resp.HostDevices[0].HostID)
+	}
+	if len(resp.HostDevices[0].Devices) != 1 {
+		t.Errorf("expected 1 device, got %d", len(resp.HostDevices[0].Devices))
+	}
+	if resp.HostDevices[0].Devices[0].Name != "U6 Pro" {
+		t.Errorf("expected device name 'U6 Pro', got %q", resp.HostDevices[0].Devices[0].Name)
+	}
+	if resp.TraceID != "trace-devices" {
+		t.Errorf("expected TraceID 'trace-devices', got %q", resp.TraceID)
+	}
+}
+
+func TestListDevicesWithHostFilter(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hostIDs := r.URL.Query()["hostIds"]
+		if len(hostIDs) != 2 || hostIDs[0] != "host-1" || hostIDs[1] != "host-2" {
+			t.Errorf("expected hostIds=['host-1', 'host-2'], got %v", hostIDs)
+		}
+
+		resp := map[string]any{
+			"data":           []map[string]any{},
+			"httpStatusCode": 200,
+			"traceId":        "trace-123",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-key")
+	client.BaseURL = server.URL
+
+	_, err := client.ListDevices(context.Background(), &ListDevicesOptions{
+		HostIDs: []string{"host-1", "host-2"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestErrorHandling(t *testing.T) {
 	tests := []struct {
 		name       string

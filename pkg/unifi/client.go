@@ -19,6 +19,8 @@ type SiteManagerClient interface {
 	GetHost(ctx context.Context, id string) (*GetHostResponse, error)
 	ListSites(ctx context.Context, opts *ListSitesOptions) (*ListSitesResponse, error)
 	ListAllSites(ctx context.Context) ([]Site, error)
+	ListDevices(ctx context.Context, opts *ListDevicesOptions) (*ListDevicesResponse, error)
+	ListAllDevices(ctx context.Context) ([]HostDevices, error)
 }
 
 var _ SiteManagerClient = (*Client)(nil)
@@ -295,4 +297,67 @@ func (c *Client) ListAllSites(ctx context.Context) ([]Site, error) {
 	}
 
 	return allSites, nil
+}
+
+func (c *Client) ListDevices(ctx context.Context, opts *ListDevicesOptions) (*ListDevicesResponse, error) {
+	var response struct {
+		Data           []HostDevices `json:"data"`
+		HTTPStatusCode int           `json:"httpStatusCode"`
+		TraceID        string        `json:"traceId"`
+		NextToken      *string       `json:"nextToken,omitempty"`
+	}
+
+	path := "/v1/devices"
+	params := url.Values{}
+	if opts != nil {
+		if opts.PageSize > 0 {
+			params.Set("pageSize", strconv.Itoa(opts.PageSize))
+		}
+		if opts.NextToken != "" {
+			params.Set("nextToken", opts.NextToken)
+		}
+		for _, hostID := range opts.HostIDs {
+			params.Add("hostIds", hostID)
+		}
+	}
+	if len(params) > 0 {
+		path += "?" + params.Encode()
+	}
+
+	err := c.do(ctx, "GET", path, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ListDevicesResponse{
+		HostDevices: response.Data,
+		TraceID:     response.TraceID,
+	}
+	if response.NextToken != nil {
+		result.NextToken = *response.NextToken
+	}
+
+	return result, nil
+}
+
+func (c *Client) ListAllDevices(ctx context.Context) ([]HostDevices, error) {
+	var allHostDevices []HostDevices
+	var nextToken string
+
+	for {
+		opts := &ListDevicesOptions{NextToken: nextToken}
+		resp, err := c.ListDevices(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		allHostDevices = append(allHostDevices, resp.HostDevices...)
+
+		if resp.NextToken == "" {
+			break
+		}
+		nextToken = resp.NextToken
+	}
+
+	return allHostDevices, nil
 }
