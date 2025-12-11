@@ -1,3 +1,7 @@
+// Tests use hardcoded credentials for httptest mock servers only.
+// These credentials never touch real systems.
+//
+//nolint:gosec // test credentials for mock servers
 package unifi
 
 import (
@@ -7,11 +11,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-)
-
-const (
-	testUsername = "testuser"
-	testPassword = "testpass" //nolint:gosec // test credentials
 )
 
 func TestNewNetworkClient(t *testing.T) {
@@ -24,16 +23,16 @@ func TestNewNetworkClient(t *testing.T) {
 			name: "valid config",
 			config: NetworkClientConfig{
 				BaseURL:  "https://192.168.1.1",
-				Username: testUsername,
-				Password: testPassword,
+				Username: "admin",
+				Password: "password",
 			},
 			wantErr: false,
 		},
 		{
 			name: "missing base URL",
 			config: NetworkClientConfig{
-				Username: testUsername,
-				Password: testPassword,
+				Username: "admin",
+				Password: "password",
 			},
 			wantErr: true,
 		},
@@ -41,7 +40,7 @@ func TestNewNetworkClient(t *testing.T) {
 			name: "missing username",
 			config: NetworkClientConfig{
 				BaseURL:  "https://192.168.1.1",
-				Password: testPassword,
+				Password: "password",
 			},
 			wantErr: true,
 		},
@@ -49,7 +48,7 @@ func TestNewNetworkClient(t *testing.T) {
 			name: "missing password",
 			config: NetworkClientConfig{
 				BaseURL:  "https://192.168.1.1",
-				Username: testUsername,
+				Username: "admin",
 			},
 			wantErr: true,
 		},
@@ -72,8 +71,8 @@ func TestNewNetworkClient(t *testing.T) {
 func TestNetworkClientDefaultSite(t *testing.T) {
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  "https://192.168.1.1",
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -96,7 +95,7 @@ func TestNetworkClientLogin(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 			t.Errorf("failed to decode request body: %v", err)
 		}
-		if payload["username"] != testUsername || payload["password"] != testPassword {
+		if payload["username"] != "admin" || payload["password"] != "password" {
 			t.Errorf("unexpected credentials: %v", payload)
 		}
 
@@ -106,8 +105,8 @@ func TestNetworkClientLogin(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -135,7 +134,7 @@ func TestNetworkClientLoginFailure(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
+		Username: "admin",
 		Password: "wrongpass",
 	})
 	if err != nil {
@@ -161,8 +160,8 @@ func TestNetworkClientLoginFailure(t *testing.T) {
 func TestNetworkClientNotLoggedIn(t *testing.T) {
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  "https://192.168.1.1",
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -210,8 +209,8 @@ func TestNetworkClientListNetworks(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -267,8 +266,8 @@ func TestNetworkClientGetNetwork(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -327,8 +326,8 @@ func TestNetworkClientCreateNetwork(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -376,8 +375,8 @@ func TestNetworkClientDeleteNetwork(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -414,8 +413,8 @@ func TestNetworkClientAPIError(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -465,8 +464,8 @@ func TestNetworkClientFirewallRules(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -515,8 +514,8 @@ func TestNetworkClientFirewallGroups(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -566,8 +565,8 @@ func TestNetworkClientPortForwards(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -616,8 +615,8 @@ func TestNetworkClientWLANs(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -658,8 +657,8 @@ func TestNetworkClientLogout(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -702,8 +701,8 @@ func TestNetworkClientCustomSite(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 		Site:     "mysite",
 	})
 	if err != nil {
@@ -763,8 +762,8 @@ func TestNetworkClientUpdateNetwork(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -821,8 +820,8 @@ func TestNetworkClientUpdateFirewallRule(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
@@ -863,8 +862,8 @@ func TestNetworkClientConflictError(t *testing.T) {
 
 	client, err := NewNetworkClient(NetworkClientConfig{
 		BaseURL:  server.URL,
-		Username: testUsername,
-		Password: testPassword,
+		Username: "admin",
+		Password: "password",
 	})
 	if err != nil {
 		t.Fatalf("NewNetworkClient() error = %v", err)
