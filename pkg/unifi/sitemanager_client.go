@@ -121,35 +121,12 @@ func (c *SiteManagerClient) doOnce(ctx context.Context, method, path string, res
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
-		msg := string(body)
-
-		var sentinel error
-		switch resp.StatusCode {
-		case 400:
-			sentinel = ErrBadRequest
-		case 401:
-			sentinel = ErrUnauthorized
-		case 403:
-			sentinel = ErrForbidden
-		case 404:
-			sentinel = ErrNotFound
-		case 429:
-			sentinel = ErrRateLimited
-		case 500:
-			sentinel = ErrServerError
-		case 502:
-			sentinel = ErrBadGateway
-		}
-
-		apiErr := &APIError{
+		return &APIError{
 			StatusCode:       resp.StatusCode,
-			Message:          msg,
+			Message:          string(body),
 			RetryAfterHeader: resp.Header.Get("Retry-After"),
+			Err:              sentinelForStatusCode(resp.StatusCode),
 		}
-		if sentinel != nil {
-			apiErr.Err = sentinel
-		}
-		return apiErr
 	}
 
 	if result != nil {
@@ -258,7 +235,7 @@ func (c *SiteManagerClient) GetHost(ctx context.Context, id string) (*GetHostRes
 		TraceID        string `json:"traceId"`
 	}
 
-	err := c.do(ctx, "GET", "/v1/hosts/"+id, &response)
+	err := c.do(ctx, "GET", "/v1/hosts/"+url.PathEscape(id), &response)
 	if err != nil {
 		return nil, err
 	}

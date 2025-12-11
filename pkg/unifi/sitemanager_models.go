@@ -239,11 +239,6 @@ type Host struct {
 	ReportedState             *ReportedState `json:"reportedState"`
 }
 
-type APIResponse struct {
-	HTTPStatusCode int    `json:"httpStatusCode"`
-	TraceID        string `json:"traceId"`
-}
-
 type ListHostsResponse struct {
 	Hosts     []Host
 	TraceID   string
