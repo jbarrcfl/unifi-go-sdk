@@ -14,6 +14,74 @@ import (
 	"time"
 )
 
+type NetworkManager interface {
+	Login(ctx context.Context) error
+	Logout(ctx context.Context) error
+	IsLoggedIn() bool
+
+	ListNetworks(ctx context.Context) ([]Network, error)
+	GetNetwork(ctx context.Context, id string) (*Network, error)
+	CreateNetwork(ctx context.Context, network *Network) (*Network, error)
+	UpdateNetwork(ctx context.Context, id string, network *Network) (*Network, error)
+	DeleteNetwork(ctx context.Context, id string) error
+
+	ListFirewallRules(ctx context.Context) ([]FirewallRule, error)
+	GetFirewallRule(ctx context.Context, id string) (*FirewallRule, error)
+	CreateFirewallRule(ctx context.Context, rule *FirewallRule) (*FirewallRule, error)
+	UpdateFirewallRule(ctx context.Context, id string, rule *FirewallRule) (*FirewallRule, error)
+	DeleteFirewallRule(ctx context.Context, id string) error
+
+	ListFirewallGroups(ctx context.Context) ([]FirewallGroup, error)
+	GetFirewallGroup(ctx context.Context, id string) (*FirewallGroup, error)
+	CreateFirewallGroup(ctx context.Context, group *FirewallGroup) (*FirewallGroup, error)
+	UpdateFirewallGroup(ctx context.Context, id string, group *FirewallGroup) (*FirewallGroup, error)
+	DeleteFirewallGroup(ctx context.Context, id string) error
+
+	ListPortForwards(ctx context.Context) ([]PortForward, error)
+	GetPortForward(ctx context.Context, id string) (*PortForward, error)
+	CreatePortForward(ctx context.Context, forward *PortForward) (*PortForward, error)
+	UpdatePortForward(ctx context.Context, id string, forward *PortForward) (*PortForward, error)
+	DeletePortForward(ctx context.Context, id string) error
+
+	ListWLANs(ctx context.Context) ([]WLANConf, error)
+	GetWLAN(ctx context.Context, id string) (*WLANConf, error)
+	CreateWLAN(ctx context.Context, wlan *WLANConf) (*WLANConf, error)
+	UpdateWLAN(ctx context.Context, id string, wlan *WLANConf) (*WLANConf, error)
+	DeleteWLAN(ctx context.Context, id string) error
+
+	ListPortConfs(ctx context.Context) ([]PortConf, error)
+	GetPortConf(ctx context.Context, id string) (*PortConf, error)
+	CreatePortConf(ctx context.Context, portconf *PortConf) (*PortConf, error)
+	UpdatePortConf(ctx context.Context, id string, portconf *PortConf) (*PortConf, error)
+	DeletePortConf(ctx context.Context, id string) error
+
+	ListRoutes(ctx context.Context) ([]Routing, error)
+	GetRoute(ctx context.Context, id string) (*Routing, error)
+	CreateRoute(ctx context.Context, route *Routing) (*Routing, error)
+	UpdateRoute(ctx context.Context, id string, route *Routing) (*Routing, error)
+	DeleteRoute(ctx context.Context, id string) error
+
+	ListUserGroups(ctx context.Context) ([]UserGroup, error)
+	GetUserGroup(ctx context.Context, id string) (*UserGroup, error)
+	CreateUserGroup(ctx context.Context, group *UserGroup) (*UserGroup, error)
+	UpdateUserGroup(ctx context.Context, id string, group *UserGroup) (*UserGroup, error)
+	DeleteUserGroup(ctx context.Context, id string) error
+
+	ListRADIUSProfiles(ctx context.Context) ([]RADIUSProfile, error)
+	GetRADIUSProfile(ctx context.Context, id string) (*RADIUSProfile, error)
+	CreateRADIUSProfile(ctx context.Context, profile *RADIUSProfile) (*RADIUSProfile, error)
+	UpdateRADIUSProfile(ctx context.Context, id string, profile *RADIUSProfile) (*RADIUSProfile, error)
+	DeleteRADIUSProfile(ctx context.Context, id string) error
+
+	ListDynamicDNS(ctx context.Context) ([]DynamicDNS, error)
+	GetDynamicDNS(ctx context.Context, id string) (*DynamicDNS, error)
+	CreateDynamicDNS(ctx context.Context, config *DynamicDNS) (*DynamicDNS, error)
+	UpdateDynamicDNS(ctx context.Context, id string, config *DynamicDNS) (*DynamicDNS, error)
+	DeleteDynamicDNS(ctx context.Context, id string) error
+}
+
+var _ NetworkManager = (*NetworkClient)(nil)
+
 type NetworkClient struct {
 	BaseURL    string
 	Site       string
@@ -104,11 +172,7 @@ func (c *NetworkClient) Login(ctx context.Context) error {
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
-		return &APIError{
-			StatusCode: resp.StatusCode,
-			Message:    string(respBody),
-			Err:        ErrUnauthorized,
-		}
+		return c.parseErrorResponse(resp.StatusCode, respBody)
 	}
 
 	c.loggedIn = true
@@ -216,32 +280,11 @@ func (c *NetworkClient) do(ctx context.Context, method, path string, body interf
 }
 
 func (c *NetworkClient) parseErrorResponse(statusCode int, body []byte) error {
-	var sentinel error
-	switch statusCode {
-	case 400:
-		sentinel = ErrBadRequest
-	case 401:
-		sentinel = ErrUnauthorized
-	case 403:
-		sentinel = ErrForbidden
-	case 404:
-		sentinel = ErrNotFound
-	case 429:
-		sentinel = ErrRateLimited
-	case 500:
-		sentinel = ErrServerError
-	case 502:
-		sentinel = ErrBadGateway
-	}
-
-	apiErr := &APIError{
+	return &APIError{
 		StatusCode: statusCode,
 		Message:    string(body),
+		Err:        sentinelForStatusCode(statusCode),
 	}
-	if sentinel != nil {
-		apiErr.Err = sentinel
-	}
-	return apiErr
 }
 
 func (c *NetworkClient) restPath(endpoint string) string {
@@ -505,4 +548,259 @@ func (c *NetworkClient) UpdateWLAN(ctx context.Context, id string, wlan *WLANCon
 
 func (c *NetworkClient) DeleteWLAN(ctx context.Context, id string) error {
 	return c.do(ctx, "DELETE", c.restPathWithID("wlanconf", id), nil, nil)
+}
+
+// PortConf CRUD operations
+
+func (c *NetworkClient) ListPortConfs(ctx context.Context) ([]PortConf, error) {
+	var portconfs []PortConf
+	err := c.do(ctx, "GET", c.restPath("portconf"), nil, &portconfs)
+	if err != nil {
+		return nil, err
+	}
+	return portconfs, nil
+}
+
+func (c *NetworkClient) GetPortConf(ctx context.Context, id string) (*PortConf, error) {
+	var portconfs []PortConf
+	err := c.do(ctx, "GET", c.restPathWithID("portconf", id), nil, &portconfs)
+	if err != nil {
+		return nil, err
+	}
+	if len(portconfs) == 0 {
+		return nil, ErrNotFound
+	}
+	return &portconfs[0], nil
+}
+
+func (c *NetworkClient) CreatePortConf(ctx context.Context, portconf *PortConf) (*PortConf, error) {
+	var portconfs []PortConf
+	err := c.do(ctx, "POST", c.restPath("portconf"), portconf, &portconfs)
+	if err != nil {
+		return nil, err
+	}
+	if len(portconfs) == 0 {
+		return nil, fmt.Errorf("no port profile returned from create")
+	}
+	return &portconfs[0], nil
+}
+
+func (c *NetworkClient) UpdatePortConf(ctx context.Context, id string, portconf *PortConf) (*PortConf, error) {
+	var portconfs []PortConf
+	err := c.do(ctx, "PUT", c.restPathWithID("portconf", id), portconf, &portconfs)
+	if err != nil {
+		return nil, err
+	}
+	if len(portconfs) == 0 {
+		return nil, fmt.Errorf("no port profile returned from update")
+	}
+	return &portconfs[0], nil
+}
+
+func (c *NetworkClient) DeletePortConf(ctx context.Context, id string) error {
+	return c.do(ctx, "DELETE", c.restPathWithID("portconf", id), nil, nil)
+}
+
+// Routing CRUD operations
+
+func (c *NetworkClient) ListRoutes(ctx context.Context) ([]Routing, error) {
+	var routes []Routing
+	err := c.do(ctx, "GET", c.restPath("routing"), nil, &routes)
+	if err != nil {
+		return nil, err
+	}
+	return routes, nil
+}
+
+func (c *NetworkClient) GetRoute(ctx context.Context, id string) (*Routing, error) {
+	var routes []Routing
+	err := c.do(ctx, "GET", c.restPathWithID("routing", id), nil, &routes)
+	if err != nil {
+		return nil, err
+	}
+	if len(routes) == 0 {
+		return nil, ErrNotFound
+	}
+	return &routes[0], nil
+}
+
+func (c *NetworkClient) CreateRoute(ctx context.Context, route *Routing) (*Routing, error) {
+	var routes []Routing
+	err := c.do(ctx, "POST", c.restPath("routing"), route, &routes)
+	if err != nil {
+		return nil, err
+	}
+	if len(routes) == 0 {
+		return nil, fmt.Errorf("no route returned from create")
+	}
+	return &routes[0], nil
+}
+
+func (c *NetworkClient) UpdateRoute(ctx context.Context, id string, route *Routing) (*Routing, error) {
+	var routes []Routing
+	err := c.do(ctx, "PUT", c.restPathWithID("routing", id), route, &routes)
+	if err != nil {
+		return nil, err
+	}
+	if len(routes) == 0 {
+		return nil, fmt.Errorf("no route returned from update")
+	}
+	return &routes[0], nil
+}
+
+func (c *NetworkClient) DeleteRoute(ctx context.Context, id string) error {
+	return c.do(ctx, "DELETE", c.restPathWithID("routing", id), nil, nil)
+}
+
+// UserGroup CRUD operations
+
+func (c *NetworkClient) ListUserGroups(ctx context.Context) ([]UserGroup, error) {
+	var groups []UserGroup
+	err := c.do(ctx, "GET", c.restPath("usergroup"), nil, &groups)
+	if err != nil {
+		return nil, err
+	}
+	return groups, nil
+}
+
+func (c *NetworkClient) GetUserGroup(ctx context.Context, id string) (*UserGroup, error) {
+	var groups []UserGroup
+	err := c.do(ctx, "GET", c.restPathWithID("usergroup", id), nil, &groups)
+	if err != nil {
+		return nil, err
+	}
+	if len(groups) == 0 {
+		return nil, ErrNotFound
+	}
+	return &groups[0], nil
+}
+
+func (c *NetworkClient) CreateUserGroup(ctx context.Context, group *UserGroup) (*UserGroup, error) {
+	var groups []UserGroup
+	err := c.do(ctx, "POST", c.restPath("usergroup"), group, &groups)
+	if err != nil {
+		return nil, err
+	}
+	if len(groups) == 0 {
+		return nil, fmt.Errorf("no user group returned from create")
+	}
+	return &groups[0], nil
+}
+
+func (c *NetworkClient) UpdateUserGroup(ctx context.Context, id string, group *UserGroup) (*UserGroup, error) {
+	var groups []UserGroup
+	err := c.do(ctx, "PUT", c.restPathWithID("usergroup", id), group, &groups)
+	if err != nil {
+		return nil, err
+	}
+	if len(groups) == 0 {
+		return nil, fmt.Errorf("no user group returned from update")
+	}
+	return &groups[0], nil
+}
+
+func (c *NetworkClient) DeleteUserGroup(ctx context.Context, id string) error {
+	return c.do(ctx, "DELETE", c.restPathWithID("usergroup", id), nil, nil)
+}
+
+// RADIUSProfile CRUD operations
+
+func (c *NetworkClient) ListRADIUSProfiles(ctx context.Context) ([]RADIUSProfile, error) {
+	var profiles []RADIUSProfile
+	err := c.do(ctx, "GET", c.restPath("radiusprofile"), nil, &profiles)
+	if err != nil {
+		return nil, err
+	}
+	return profiles, nil
+}
+
+func (c *NetworkClient) GetRADIUSProfile(ctx context.Context, id string) (*RADIUSProfile, error) {
+	var profiles []RADIUSProfile
+	err := c.do(ctx, "GET", c.restPathWithID("radiusprofile", id), nil, &profiles)
+	if err != nil {
+		return nil, err
+	}
+	if len(profiles) == 0 {
+		return nil, ErrNotFound
+	}
+	return &profiles[0], nil
+}
+
+func (c *NetworkClient) CreateRADIUSProfile(ctx context.Context, profile *RADIUSProfile) (*RADIUSProfile, error) {
+	var profiles []RADIUSProfile
+	err := c.do(ctx, "POST", c.restPath("radiusprofile"), profile, &profiles)
+	if err != nil {
+		return nil, err
+	}
+	if len(profiles) == 0 {
+		return nil, fmt.Errorf("no RADIUS profile returned from create")
+	}
+	return &profiles[0], nil
+}
+
+func (c *NetworkClient) UpdateRADIUSProfile(ctx context.Context, id string, profile *RADIUSProfile) (*RADIUSProfile, error) {
+	var profiles []RADIUSProfile
+	err := c.do(ctx, "PUT", c.restPathWithID("radiusprofile", id), profile, &profiles)
+	if err != nil {
+		return nil, err
+	}
+	if len(profiles) == 0 {
+		return nil, fmt.Errorf("no RADIUS profile returned from update")
+	}
+	return &profiles[0], nil
+}
+
+func (c *NetworkClient) DeleteRADIUSProfile(ctx context.Context, id string) error {
+	return c.do(ctx, "DELETE", c.restPathWithID("radiusprofile", id), nil, nil)
+}
+
+// DynamicDNS CRUD operations
+
+func (c *NetworkClient) ListDynamicDNS(ctx context.Context) ([]DynamicDNS, error) {
+	var configs []DynamicDNS
+	err := c.do(ctx, "GET", c.restPath("dynamicdns"), nil, &configs)
+	if err != nil {
+		return nil, err
+	}
+	return configs, nil
+}
+
+func (c *NetworkClient) GetDynamicDNS(ctx context.Context, id string) (*DynamicDNS, error) {
+	var configs []DynamicDNS
+	err := c.do(ctx, "GET", c.restPathWithID("dynamicdns", id), nil, &configs)
+	if err != nil {
+		return nil, err
+	}
+	if len(configs) == 0 {
+		return nil, ErrNotFound
+	}
+	return &configs[0], nil
+}
+
+func (c *NetworkClient) CreateDynamicDNS(ctx context.Context, config *DynamicDNS) (*DynamicDNS, error) {
+	var configs []DynamicDNS
+	err := c.do(ctx, "POST", c.restPath("dynamicdns"), config, &configs)
+	if err != nil {
+		return nil, err
+	}
+	if len(configs) == 0 {
+		return nil, fmt.Errorf("no dynamic DNS config returned from create")
+	}
+	return &configs[0], nil
+}
+
+func (c *NetworkClient) UpdateDynamicDNS(ctx context.Context, id string, config *DynamicDNS) (*DynamicDNS, error) {
+	var configs []DynamicDNS
+	err := c.do(ctx, "PUT", c.restPathWithID("dynamicdns", id), config, &configs)
+	if err != nil {
+		return nil, err
+	}
+	if len(configs) == 0 {
+		return nil, fmt.Errorf("no dynamic DNS config returned from update")
+	}
+	return &configs[0], nil
+}
+
+func (c *NetworkClient) DeleteDynamicDNS(ctx context.Context, id string) error {
+	return c.do(ctx, "DELETE", c.restPathWithID("dynamicdns", id), nil, nil)
 }

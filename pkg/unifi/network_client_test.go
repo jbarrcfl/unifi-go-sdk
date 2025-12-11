@@ -718,3 +718,163 @@ func TestNetworkClientCustomSite(t *testing.T) {
 		t.Fatalf("ListNetworks() error = %v", err)
 	}
 }
+
+func TestNetworkClientUpdateNetwork(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/rest/networkconf/abc123":
+			if r.Method != "PUT" {
+				t.Errorf("expected PUT, got %s", r.Method)
+			}
+
+			var network Network
+			if err := json.NewDecoder(r.Body).Decode(&network); err != nil {
+				t.Errorf("failed to decode request body: %v", err)
+			}
+
+			if network.Name != "UpdatedNetwork" {
+				t.Errorf("expected name UpdatedNetwork, got %s", network.Name)
+			}
+
+			response := map[string]any{
+				"meta": map[string]string{"rc": "ok"},
+				"data": []map[string]any{
+					{
+						"_id":       "abc123",
+						"name":      network.Name,
+						"ip_subnet": network.IPSubnet,
+					},
+				},
+			}
+			json.NewEncoder(w).Encode(response)
+		default:
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	client, err := NewNetworkClient(NetworkClientConfig{
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
+	})
+	if err != nil {
+		t.Fatalf("NewNetworkClient() error = %v", err)
+	}
+
+	if err := client.Login(context.Background()); err != nil {
+		t.Fatalf("Login() error = %v", err)
+	}
+
+	network := &Network{
+		Name:     "UpdatedNetwork",
+		IPSubnet: "10.0.0.0/24",
+	}
+
+	updated, err := client.UpdateNetwork(context.Background(), "abc123", network)
+	if err != nil {
+		t.Fatalf("UpdateNetwork() error = %v", err)
+	}
+
+	if updated.ID != "abc123" {
+		t.Errorf("expected ID abc123, got %s", updated.ID)
+	}
+	if updated.Name != "UpdatedNetwork" {
+		t.Errorf("expected name UpdatedNetwork, got %s", updated.Name)
+	}
+}
+
+func TestNetworkClientUpdateFirewallRule(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/rest/firewallrule/rule123":
+			if r.Method != "PUT" {
+				t.Errorf("expected PUT, got %s", r.Method)
+			}
+
+			response := map[string]any{
+				"meta": map[string]string{"rc": "ok"},
+				"data": []map[string]any{
+					{
+						"_id":    "rule123",
+						"name":   "Updated Rule",
+						"action": "accept",
+					},
+				},
+			}
+			json.NewEncoder(w).Encode(response)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	client, err := NewNetworkClient(NetworkClientConfig{
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
+	})
+	if err != nil {
+		t.Fatalf("NewNetworkClient() error = %v", err)
+	}
+
+	if err := client.Login(context.Background()); err != nil {
+		t.Fatalf("Login() error = %v", err)
+	}
+
+	rule := &FirewallRule{
+		Name:   "Updated Rule",
+		Action: "accept",
+	}
+
+	updated, err := client.UpdateFirewallRule(context.Background(), "rule123", rule)
+	if err != nil {
+		t.Fatalf("UpdateFirewallRule() error = %v", err)
+	}
+
+	if updated.Name != "Updated Rule" {
+		t.Errorf("expected name 'Updated Rule', got '%s'", updated.Name)
+	}
+}
+
+func TestNetworkClientConflictError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/rest/networkconf/abc123":
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(`{"error": "resource has dependencies"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	client, err := NewNetworkClient(NetworkClientConfig{
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
+	})
+	if err != nil {
+		t.Fatalf("NewNetworkClient() error = %v", err)
+	}
+
+	if err := client.Login(context.Background()); err != nil {
+		t.Fatalf("Login() error = %v", err)
+	}
+
+	err = client.DeleteNetwork(context.Background(), "abc123")
+	if err == nil {
+		t.Fatal("DeleteNetwork() should have failed with conflict")
+	}
+
+	if !errors.Is(err, ErrConflict) {
+		t.Errorf("expected ErrConflict, got %v", err)
+	}
+}
