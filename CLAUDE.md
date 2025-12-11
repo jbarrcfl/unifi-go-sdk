@@ -6,6 +6,7 @@ Go SDK for the UniFi Site Manager API.
 
 - `pkg/unifi/` - SDK package (client, models, errors)
 - `cmd/example/` - Test harness (requires `UNIFI_API_KEY` env var)
+- `cmd/validate/` - API drift detection tool (requires `UNIFI_API_KEY` env var)
 
 ## API Documentation
 
