@@ -105,7 +105,13 @@ if errors.As(err, &apiErr) {
 
 ## Rate Limiting
 
-The SDK automatically retries requests that receive a 429 (rate limited) response. By default, it will retry up to 3 times, using the retry delay from the `Retry-After` header or the delay specified in the response body.
+The SDK automatically retries requests that receive a 429 (rate limited) response. By default, it will retry up to 3 times with exponential backoff and jitter to prevent thundering herd issues.
+
+The retry delay is calculated as:
+1. Parse `Retry-After` header (supports integer seconds, fractional seconds, and HTTP-date format)
+2. Fall back to parsing delay from response body
+3. If server specifies a delay, use it exactly (no modification)
+4. Otherwise, apply exponential backoff (1s, 2s, 4s...) with up to 50% jitter, capped at 30s
 
 ```go
 client := unifi.NewSiteManagerClient("your-api-key")
@@ -130,7 +136,17 @@ Get your API key from the [UniFi Site Manager](https://unifi.ui.com).
 
 ## Status
 
-The Site Manager API v1 read-only endpoints are complete. Network API support is planned for a future release.
+**Site Manager API** (cloud): Complete. All v1 read-only endpoints implemented.
+
+**Network API** (local controller): In progress. Session-based authentication and CRUD operations for networks, firewall rules, firewall groups, port forwards, and WLANs are implemented. See [#1](https://github.com/resnickio/unifi-go-sdk/issues/1) for tracking.
+
+## Model Provenance
+
+Models in this SDK are hand-written based on:
+- **Site Manager API**: [Ubiquiti developer documentation](https://developer.ui.com/site-manager-api/gettingstarted) and observed API responses
+- **Network API**: Observed responses from the UniFi Network Application REST API (`/proxy/network/api/s/{site}/rest/*`)
+
+No official OpenAPI specification exists for the Site Manager API. The Network API has an OpenAPI spec at `/proxy/network/api-docs/integration.json`, but we use the legacy REST API for write operations which is not covered by that spec.
 
 ## License
 
