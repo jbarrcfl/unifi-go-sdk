@@ -135,6 +135,20 @@ func main() {
 | Firewall Groups | `ListFirewallGroups`, `GetFirewallGroup`, `CreateFirewallGroup`, `UpdateFirewallGroup`, `DeleteFirewallGroup` |
 | Port Forwards | `ListPortForwards`, `GetPortForward`, `CreatePortForward`, `UpdatePortForward`, `DeletePortForward` |
 | WLANs | `ListWLANs`, `GetWLAN`, `CreateWLAN`, `UpdateWLAN`, `DeleteWLAN` |
+| Port Profiles | `ListPortConfs`, `GetPortConf`, `CreatePortConf`, `UpdatePortConf`, `DeletePortConf` |
+| Static Routes | `ListRoutes`, `GetRoute`, `CreateRoute`, `UpdateRoute`, `DeleteRoute` |
+| User Groups | `ListUserGroups`, `GetUserGroup`, `CreateUserGroup`, `UpdateUserGroup`, `DeleteUserGroup` |
+| RADIUS Profiles | `ListRADIUSProfiles`, `GetRADIUSProfile`, `CreateRADIUSProfile`, `UpdateRADIUSProfile`, `DeleteRADIUSProfile` |
+| Dynamic DNS | `ListDynamicDNS`, `GetDynamicDNS`, `CreateDynamicDNS`, `UpdateDynamicDNS`, `DeleteDynamicDNS` |
+
+### Interfaces for Mocking
+
+Both clients implement interfaces for easy mocking in tests:
+
+```go
+var _ unifi.SiteManager = (*unifi.SiteManagerClient)(nil)
+var _ unifi.NetworkManager = (*unifi.NetworkClient)(nil)
+```
 
 ## Error Handling
 
@@ -155,6 +169,7 @@ Available errors:
 - `ErrUnauthorized` (401)
 - `ErrForbidden` (403)
 - `ErrNotFound` (404)
+- `ErrConflict` (409)
 - `ErrRateLimited` (429)
 - `ErrServerError` (500)
 - `ErrBadGateway` (502)
@@ -200,7 +215,7 @@ client.HTTPClient = &http.Client{
 | API | Status | Description |
 |-----|--------|-------------|
 | Site Manager | Complete | All v1 read-only endpoints (hosts, sites, devices) |
-| Network | Complete | Session auth, networks, firewall rules/groups, port forwards, WLANs |
+| Network | Complete | Session auth, networks, firewall rules/groups, port forwards, WLANs, port profiles, routes, user groups, RADIUS, DDNS |
 
 ## Model Provenance
 

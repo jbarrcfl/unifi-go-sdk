@@ -31,7 +31,7 @@ Two distinct APIs, both implemented:
 2. **Network API** (local controller)
    - Base: `https://<controller>/proxy/network/api/s/{site}/rest/`
    - Auth: Session-based (username/password → cookie)
-   - Full CRUD: networks, firewall rules/groups, port forwards, WLANs
+   - Full CRUD: networks, firewall rules/groups, port forwards, WLANs, port profiles, routes, user groups, RADIUS, DDNS
 
 ## Build & Test
 
@@ -61,7 +61,7 @@ This SDK is intended to support a Terraform provider. Prioritize type safety wit
 
 - **Reactive rate limiting over proactive**: Terraform's sequential execution model rarely hits limits. Reactive retry with exponential backoff + jitter adapts automatically.
 - **Hand-written types**: No official OpenAPI specs cover our use cases. Models derived from API docs and observed responses.
-- **Interface-first**: `SiteManager` interface enables mocking without test dependencies on real API.
+- **Interface-first**: `SiteManager` and `NetworkManager` interfaces enable mocking without test dependencies on real API.
 - **Session-based auth for Network API**: The official Integration API is read-only. Legacy REST API with cookie auth supports writes.
 
 ## Preferences
@@ -91,6 +91,11 @@ Both APIs complete:
 - Firewall Groups: `List`, `Get`, `Create`, `Update`, `Delete`
 - Port Forwards: `List`, `Get`, `Create`, `Update`, `Delete`
 - WLANs: `List`, `Get`, `Create`, `Update`, `Delete`
+- Port Profiles: `List`, `Get`, `Create`, `Update`, `Delete`
+- Static Routes: `List`, `Get`, `Create`, `Update`, `Delete`
+- User Groups: `List`, `Get`, `Create`, `Update`, `Delete`
+- RADIUS Profiles: `List`, `Get`, `Create`, `Update`, `Delete`
+- Dynamic DNS: `List`, `Get`, `Create`, `Update`, `Delete`
 
 ## Related Projects
 
