@@ -28,7 +28,7 @@ import (
 )
 
 func main() {
-    client := unifi.NewClient("your-api-key")
+    client := unifi.NewSiteManagerClient("your-api-key")
 
     // List all hosts
     hosts, err := client.ListAllHosts(context.Background())
@@ -108,7 +108,7 @@ if errors.As(err, &apiErr) {
 The SDK automatically retries requests that receive a 429 (rate limited) response. By default, it will retry up to 3 times, using the retry delay from the `Retry-After` header or the delay specified in the response body.
 
 ```go
-client := unifi.NewClient("your-api-key")
+client := unifi.NewSiteManagerClient("your-api-key")
 client.MaxRetries = 5 // increase retries
 client.MaxRetries = 0 // disable retries
 ```
@@ -118,7 +118,7 @@ client.MaxRetries = 0 // disable retries
 The default HTTP client has a 30 second timeout. You can customize this:
 
 ```go
-client := unifi.NewClient("your-api-key")
+client := unifi.NewSiteManagerClient("your-api-key")
 client.HTTPClient = &http.Client{
     Timeout: 60 * time.Second,
 }

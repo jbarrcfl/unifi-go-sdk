@@ -15,7 +15,7 @@ func main() {
 		log.Fatal("UNIFI_API_KEY is required")
 	}
 
-	client := unifi.NewClient(apiKey)
+	client := unifi.NewSiteManagerClient(apiKey)
 
 	hosts, err := client.ListAllHosts(context.Background())
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-type SiteManagerClient interface {
+type SiteManager interface {
 	ListHosts(ctx context.Context, opts *ListHostsOptions) (*ListHostsResponse, error)
 	ListAllHosts(ctx context.Context) ([]Host, error)
 	GetHost(ctx context.Context, id string) (*GetHostResponse, error)
@@ -23,9 +23,9 @@ type SiteManagerClient interface {
 	ListAllDevices(ctx context.Context) ([]HostDevices, error)
 }
 
-var _ SiteManagerClient = (*Client)(nil)
+var _ SiteManager = (*SiteManagerClient)(nil)
 
-type Client struct {
+type SiteManagerClient struct {
 	BaseURL    string
 	APIKey     string
 	HTTPClient *http.Client
@@ -42,8 +42,8 @@ const (
 
 var retryAfterRegex = regexp.MustCompile(`retry after ([\d.]+)s`)
 
-func NewClient(apiKey string) *Client {
-	return &Client{
+func NewSiteManagerClient(apiKey string) *SiteManagerClient {
+	return &SiteManagerClient{
 		BaseURL:    defaultBaseURL,
 		APIKey:     apiKey,
 		HTTPClient: &http.Client{Timeout: defaultTimeout},
@@ -51,7 +51,7 @@ func NewClient(apiKey string) *Client {
 	}
 }
 
-func (c *Client) do(ctx context.Context, method, path string, result interface{}) error {
+func (c *SiteManagerClient) do(ctx context.Context, method, path string, result interface{}) error {
 	var lastErr error
 	maxAttempts := c.MaxRetries + 1
 
@@ -82,7 +82,7 @@ func (c *Client) do(ctx context.Context, method, path string, result interface{}
 	return lastErr
 }
 
-func (c *Client) doOnce(ctx context.Context, method, path string, result interface{}) error {
+func (c *SiteManagerClient) doOnce(ctx context.Context, method, path string, result interface{}) error {
 	reqURL := c.BaseURL + path
 
 	req, err := http.NewRequestWithContext(ctx, method, reqURL, nil)
@@ -161,7 +161,7 @@ func parseRetryAfterBody(msg string) time.Duration {
 	return defaultRetryWait
 }
 
-func (c *Client) ListHosts(ctx context.Context, opts *ListHostsOptions) (*ListHostsResponse, error) {
+func (c *SiteManagerClient) ListHosts(ctx context.Context, opts *ListHostsOptions) (*ListHostsResponse, error) {
 	var response struct {
 		Data           []Host  `json:"data"`
 		HTTPStatusCode int     `json:"httpStatusCode"`
@@ -199,7 +199,7 @@ func (c *Client) ListHosts(ctx context.Context, opts *ListHostsOptions) (*ListHo
 	return result, nil
 }
 
-func (c *Client) ListAllHosts(ctx context.Context) ([]Host, error) {
+func (c *SiteManagerClient) ListAllHosts(ctx context.Context) ([]Host, error) {
 	var allHosts []Host
 	var nextToken string
 
@@ -221,7 +221,7 @@ func (c *Client) ListAllHosts(ctx context.Context) ([]Host, error) {
 	return allHosts, nil
 }
 
-func (c *Client) GetHost(ctx context.Context, id string) (*GetHostResponse, error) {
+func (c *SiteManagerClient) GetHost(ctx context.Context, id string) (*GetHostResponse, error) {
 	var response struct {
 		Data           Host   `json:"data"`
 		HTTPStatusCode int    `json:"httpStatusCode"`
@@ -239,7 +239,7 @@ func (c *Client) GetHost(ctx context.Context, id string) (*GetHostResponse, erro
 	}, nil
 }
 
-func (c *Client) ListSites(ctx context.Context, opts *ListSitesOptions) (*ListSitesResponse, error) {
+func (c *SiteManagerClient) ListSites(ctx context.Context, opts *ListSitesOptions) (*ListSitesResponse, error) {
 	var response struct {
 		Data           []Site  `json:"data"`
 		HTTPStatusCode int     `json:"httpStatusCode"`
@@ -277,7 +277,7 @@ func (c *Client) ListSites(ctx context.Context, opts *ListSitesOptions) (*ListSi
 	return result, nil
 }
 
-func (c *Client) ListAllSites(ctx context.Context) ([]Site, error) {
+func (c *SiteManagerClient) ListAllSites(ctx context.Context) ([]Site, error) {
 	var allSites []Site
 	var nextToken string
 
@@ -299,7 +299,7 @@ func (c *Client) ListAllSites(ctx context.Context) ([]Site, error) {
 	return allSites, nil
 }
 
-func (c *Client) ListDevices(ctx context.Context, opts *ListDevicesOptions) (*ListDevicesResponse, error) {
+func (c *SiteManagerClient) ListDevices(ctx context.Context, opts *ListDevicesOptions) (*ListDevicesResponse, error) {
 	var response struct {
 		Data           []HostDevices `json:"data"`
 		HTTPStatusCode int           `json:"httpStatusCode"`
@@ -340,7 +340,7 @@ func (c *Client) ListDevices(ctx context.Context, opts *ListDevicesOptions) (*Li
 	return result, nil
 }
 
-func (c *Client) ListAllDevices(ctx context.Context) ([]HostDevices, error) {
+func (c *SiteManagerClient) ListAllDevices(ctx context.Context) ([]HostDevices, error) {
 	var allHostDevices []HostDevices
 	var nextToken string
 

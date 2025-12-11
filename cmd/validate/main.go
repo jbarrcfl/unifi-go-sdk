@@ -30,7 +30,7 @@ func main() {
 		log.Fatal("UNIFI_API_KEY environment variable is required")
 	}
 
-	client := unifi.NewClient(apiKey)
+	client := unifi.NewSiteManagerClient(apiKey)
 
 	var report Report
 
@@ -53,7 +53,7 @@ func main() {
 	}
 }
 
-func validateHosts(client *unifi.Client) ValidationResult {
+func validateHosts(client *unifi.SiteManagerClient) ValidationResult {
 	result := ValidationResult{Endpoint: "/v1/hosts", Status: "ok"}
 
 	req, err := newAPIRequest(client, "/v1/hosts?pageSize=1")
@@ -97,7 +97,7 @@ func validateHosts(client *unifi.Client) ValidationResult {
 	return result
 }
 
-func validateSites(client *unifi.Client) ValidationResult {
+func validateSites(client *unifi.SiteManagerClient) ValidationResult {
 	result := ValidationResult{Endpoint: "/v1/sites", Status: "ok"}
 
 	req, _ := newAPIRequest(client, "/v1/sites?pageSize=1")
@@ -136,7 +136,7 @@ func validateSites(client *unifi.Client) ValidationResult {
 	return result
 }
 
-func validateDevices(client *unifi.Client) ValidationResult {
+func validateDevices(client *unifi.SiteManagerClient) ValidationResult {
 	result := ValidationResult{Endpoint: "/v1/devices", Status: "ok"}
 
 	req, _ := newAPIRequest(client, "/v1/devices?pageSize=1")
@@ -186,7 +186,7 @@ func validateDevices(client *unifi.Client) ValidationResult {
 	return result
 }
 
-func newAPIRequest(client *unifi.Client, path string) (*http.Request, error) {
+func newAPIRequest(client *unifi.SiteManagerClient, path string) (*http.Request, error) {
 	req, err := http.NewRequest("GET", client.BaseURL+path, nil)
 	if err != nil {
 		return nil, err
