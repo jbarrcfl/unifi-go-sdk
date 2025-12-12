@@ -22,20 +22,47 @@ type ValidationResult struct {
 }
 
 type Report struct {
-	Results []ValidationResult `json:"results"`
-	HasDrift bool              `json:"hasDrift"`
+	API      string             `json:"api"`
+	Results  []ValidationResult `json:"results"`
+	HasDrift bool               `json:"hasDrift"`
 }
 
 func main() {
 	apiKey := os.Getenv("UNIFI_API_KEY")
-	if apiKey == "" {
-		log.Fatal("UNIFI_API_KEY environment variable is required")
+	networkURL := os.Getenv("UNIFI_NETWORK_URL")
+	networkUser := os.Getenv("UNIFI_NETWORK_USER")
+	networkPass := os.Getenv("UNIFI_NETWORK_PASS")
+
+	var reports []Report
+
+	if apiKey != "" {
+		report := validateSiteManagerAPI(apiKey)
+		reports = append(reports, report)
 	}
 
+	if networkURL != "" && networkUser != "" && networkPass != "" {
+		report := validateNetworkAPI(networkURL, networkUser, networkPass)
+		reports = append(reports, report)
+	}
+
+	if len(reports) == 0 {
+		log.Fatal("No API credentials provided. Set UNIFI_API_KEY for Site Manager API or UNIFI_NETWORK_URL/USER/PASS for Network API")
+	}
+
+	output, _ := json.MarshalIndent(reports, "", "  ")
+	fmt.Println(string(output))
+
+	for _, r := range reports {
+		if r.HasDrift {
+			os.Exit(1)
+		}
+	}
+}
+
+func validateSiteManagerAPI(apiKey string) Report {
 	client := unifi.NewSiteManagerClient(apiKey)
 
-	var report Report
-
+	report := Report{API: "site-manager"}
 	report.Results = append(report.Results, validateHosts(client))
 	report.Results = append(report.Results, validateSites(client))
 	report.Results = append(report.Results, validateDevices(client))
@@ -47,12 +74,57 @@ func main() {
 		}
 	}
 
-	output, _ := json.MarshalIndent(report, "", "  ")
-	fmt.Println(string(output))
+	return report
+}
 
-	if report.HasDrift {
-		os.Exit(1)
+func validateNetworkAPI(url, user, pass string) Report {
+	report := Report{API: "network"}
+
+	client, err := unifi.NewNetworkClient(unifi.NetworkClientConfig{
+		BaseURL:            url,
+		Username:           user,
+		Password:           pass,
+		InsecureSkipVerify: true,
+	})
+	if err != nil {
+		report.Results = append(report.Results, ValidationResult{
+			Endpoint: "login",
+			Status:   fmt.Sprintf("client error: %v", err),
+		})
+		return report
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	if err := client.Login(ctx); err != nil {
+		report.Results = append(report.Results, ValidationResult{
+			Endpoint: "login",
+			Status:   fmt.Sprintf("login error: %v", err),
+		})
+		return report
+	}
+	defer client.Logout(context.Background())
+
+	report.Results = append(report.Results, validateNetworkConf(client))
+	report.Results = append(report.Results, validateFirewallRules(client))
+	report.Results = append(report.Results, validateFirewallGroups(client))
+	report.Results = append(report.Results, validatePortForwards(client))
+	report.Results = append(report.Results, validateWLANConf(client))
+	report.Results = append(report.Results, validatePortConf(client))
+	report.Results = append(report.Results, validateRouting(client))
+	report.Results = append(report.Results, validateUserGroups(client))
+	report.Results = append(report.Results, validateRADIUSProfiles(client))
+	report.Results = append(report.Results, validateDynamicDNS(client))
+
+	for _, r := range report.Results {
+		if len(r.MissingFields) > 0 {
+			report.HasDrift = true
+			break
+		}
+	}
+
+	return report
 }
 
 func validateHosts(client *unifi.SiteManagerClient) ValidationResult {
@@ -251,4 +323,365 @@ func findMissingFields(data map[string]interface{}, structFields map[string]refl
 	}
 
 	return missing
+}
+
+func validateNetworkConf(client *unifi.NetworkClient) ValidationResult {
+	result := ValidationResult{Endpoint: "networkconf", Status: "ok"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	networks, err := client.ListNetworks(ctx)
+	if err != nil {
+		result.Status = fmt.Sprintf("error: %v", err)
+		return result
+	}
+
+	if len(networks) == 0 {
+		result.Status = "skipped (no data)"
+		return result
+	}
+
+	raw, err := fetchNetworkRaw(client, "networkconf")
+	if err != nil {
+		result.Status = fmt.Sprintf("raw fetch error: %v", err)
+		return result
+	}
+
+	structFields := getJSONFields(reflect.TypeOf(unifi.Network{}))
+	result.MissingFields = findMissingFields(raw, structFields, "")
+
+	if len(result.MissingFields) > 0 {
+		result.Status = "drift detected"
+	}
+
+	return result
+}
+
+func validateFirewallRules(client *unifi.NetworkClient) ValidationResult {
+	result := ValidationResult{Endpoint: "firewallrule", Status: "ok"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	rules, err := client.ListFirewallRules(ctx)
+	if err != nil {
+		result.Status = fmt.Sprintf("error: %v", err)
+		return result
+	}
+
+	if len(rules) == 0 {
+		result.Status = "skipped (no data)"
+		return result
+	}
+
+	raw, err := fetchNetworkRaw(client, "firewallrule")
+	if err != nil {
+		result.Status = fmt.Sprintf("raw fetch error: %v", err)
+		return result
+	}
+
+	structFields := getJSONFields(reflect.TypeOf(unifi.FirewallRule{}))
+	result.MissingFields = findMissingFields(raw, structFields, "")
+
+	if len(result.MissingFields) > 0 {
+		result.Status = "drift detected"
+	}
+
+	return result
+}
+
+func validateFirewallGroups(client *unifi.NetworkClient) ValidationResult {
+	result := ValidationResult{Endpoint: "firewallgroup", Status: "ok"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	groups, err := client.ListFirewallGroups(ctx)
+	if err != nil {
+		result.Status = fmt.Sprintf("error: %v", err)
+		return result
+	}
+
+	if len(groups) == 0 {
+		result.Status = "skipped (no data)"
+		return result
+	}
+
+	raw, err := fetchNetworkRaw(client, "firewallgroup")
+	if err != nil {
+		result.Status = fmt.Sprintf("raw fetch error: %v", err)
+		return result
+	}
+
+	structFields := getJSONFields(reflect.TypeOf(unifi.FirewallGroup{}))
+	result.MissingFields = findMissingFields(raw, structFields, "")
+
+	if len(result.MissingFields) > 0 {
+		result.Status = "drift detected"
+	}
+
+	return result
+}
+
+func validatePortForwards(client *unifi.NetworkClient) ValidationResult {
+	result := ValidationResult{Endpoint: "portforward", Status: "ok"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	forwards, err := client.ListPortForwards(ctx)
+	if err != nil {
+		result.Status = fmt.Sprintf("error: %v", err)
+		return result
+	}
+
+	if len(forwards) == 0 {
+		result.Status = "skipped (no data)"
+		return result
+	}
+
+	raw, err := fetchNetworkRaw(client, "portforward")
+	if err != nil {
+		result.Status = fmt.Sprintf("raw fetch error: %v", err)
+		return result
+	}
+
+	structFields := getJSONFields(reflect.TypeOf(unifi.PortForward{}))
+	result.MissingFields = findMissingFields(raw, structFields, "")
+
+	if len(result.MissingFields) > 0 {
+		result.Status = "drift detected"
+	}
+
+	return result
+}
+
+func validateWLANConf(client *unifi.NetworkClient) ValidationResult {
+	result := ValidationResult{Endpoint: "wlanconf", Status: "ok"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	wlans, err := client.ListWLANs(ctx)
+	if err != nil {
+		result.Status = fmt.Sprintf("error: %v", err)
+		return result
+	}
+
+	if len(wlans) == 0 {
+		result.Status = "skipped (no data)"
+		return result
+	}
+
+	raw, err := fetchNetworkRaw(client, "wlanconf")
+	if err != nil {
+		result.Status = fmt.Sprintf("raw fetch error: %v", err)
+		return result
+	}
+
+	structFields := getJSONFields(reflect.TypeOf(unifi.WLANConf{}))
+	result.MissingFields = findMissingFields(raw, structFields, "")
+
+	if len(result.MissingFields) > 0 {
+		result.Status = "drift detected"
+	}
+
+	return result
+}
+
+func validatePortConf(client *unifi.NetworkClient) ValidationResult {
+	result := ValidationResult{Endpoint: "portconf", Status: "ok"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	confs, err := client.ListPortConfs(ctx)
+	if err != nil {
+		result.Status = fmt.Sprintf("error: %v", err)
+		return result
+	}
+
+	if len(confs) == 0 {
+		result.Status = "skipped (no data)"
+		return result
+	}
+
+	raw, err := fetchNetworkRaw(client, "portconf")
+	if err != nil {
+		result.Status = fmt.Sprintf("raw fetch error: %v", err)
+		return result
+	}
+
+	structFields := getJSONFields(reflect.TypeOf(unifi.PortConf{}))
+	result.MissingFields = findMissingFields(raw, structFields, "")
+
+	if len(result.MissingFields) > 0 {
+		result.Status = "drift detected"
+	}
+
+	return result
+}
+
+func validateRouting(client *unifi.NetworkClient) ValidationResult {
+	result := ValidationResult{Endpoint: "routing", Status: "ok"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	routes, err := client.ListRoutes(ctx)
+	if err != nil {
+		result.Status = fmt.Sprintf("error: %v", err)
+		return result
+	}
+
+	if len(routes) == 0 {
+		result.Status = "skipped (no data)"
+		return result
+	}
+
+	raw, err := fetchNetworkRaw(client, "routing")
+	if err != nil {
+		result.Status = fmt.Sprintf("raw fetch error: %v", err)
+		return result
+	}
+
+	structFields := getJSONFields(reflect.TypeOf(unifi.Routing{}))
+	result.MissingFields = findMissingFields(raw, structFields, "")
+
+	if len(result.MissingFields) > 0 {
+		result.Status = "drift detected"
+	}
+
+	return result
+}
+
+func validateUserGroups(client *unifi.NetworkClient) ValidationResult {
+	result := ValidationResult{Endpoint: "usergroup", Status: "ok"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	groups, err := client.ListUserGroups(ctx)
+	if err != nil {
+		result.Status = fmt.Sprintf("error: %v", err)
+		return result
+	}
+
+	if len(groups) == 0 {
+		result.Status = "skipped (no data)"
+		return result
+	}
+
+	raw, err := fetchNetworkRaw(client, "usergroup")
+	if err != nil {
+		result.Status = fmt.Sprintf("raw fetch error: %v", err)
+		return result
+	}
+
+	structFields := getJSONFields(reflect.TypeOf(unifi.UserGroup{}))
+	result.MissingFields = findMissingFields(raw, structFields, "")
+
+	if len(result.MissingFields) > 0 {
+		result.Status = "drift detected"
+	}
+
+	return result
+}
+
+func validateRADIUSProfiles(client *unifi.NetworkClient) ValidationResult {
+	result := ValidationResult{Endpoint: "radiusprofile", Status: "ok"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	profiles, err := client.ListRADIUSProfiles(ctx)
+	if err != nil {
+		result.Status = fmt.Sprintf("error: %v", err)
+		return result
+	}
+
+	if len(profiles) == 0 {
+		result.Status = "skipped (no data)"
+		return result
+	}
+
+	raw, err := fetchNetworkRaw(client, "radiusprofile")
+	if err != nil {
+		result.Status = fmt.Sprintf("raw fetch error: %v", err)
+		return result
+	}
+
+	structFields := getJSONFields(reflect.TypeOf(unifi.RADIUSProfile{}))
+	result.MissingFields = findMissingFields(raw, structFields, "")
+
+	if len(result.MissingFields) > 0 {
+		result.Status = "drift detected"
+	}
+
+	return result
+}
+
+func validateDynamicDNS(client *unifi.NetworkClient) ValidationResult {
+	result := ValidationResult{Endpoint: "dynamicdns", Status: "ok"}
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	configs, err := client.ListDynamicDNS(ctx)
+	if err != nil {
+		result.Status = fmt.Sprintf("error: %v", err)
+		return result
+	}
+
+	if len(configs) == 0 {
+		result.Status = "skipped (no data)"
+		return result
+	}
+
+	raw, err := fetchNetworkRaw(client, "dynamicdns")
+	if err != nil {
+		result.Status = fmt.Sprintf("raw fetch error: %v", err)
+		return result
+	}
+
+	structFields := getJSONFields(reflect.TypeOf(unifi.DynamicDNS{}))
+	result.MissingFields = findMissingFields(raw, structFields, "")
+
+	if len(result.MissingFields) > 0 {
+		result.Status = "drift detected"
+	}
+
+	return result
+}
+
+func fetchNetworkRaw(client *unifi.NetworkClient, endpoint string) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	url := client.BaseURL + "/proxy/network/api/s/" + client.Site + "/rest/" + endpoint
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var raw struct {
+		Data []map[string]interface{} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		return nil, err
+	}
+
+	if len(raw.Data) == 0 {
+		return nil, fmt.Errorf("no data returned")
+	}
+
+	return raw.Data[0], nil
 }
