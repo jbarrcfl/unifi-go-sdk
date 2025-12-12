@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+// NetworkManager defines the interface for the UniFi Network API.
+// This local controller API provides full CRUD operations on network configuration.
 type NetworkManager interface {
 	Login(ctx context.Context) error
 	Logout(ctx context.Context) error
@@ -82,10 +84,14 @@ type NetworkManager interface {
 
 var _ NetworkManager = (*NetworkClient)(nil)
 
+// NetworkClient is a client for the UniFi Network API.
+// It uses session-based authentication (username/password) and provides
+// full CRUD operations for network configuration.
 type NetworkClient struct {
 	BaseURL    string
 	Site       string
 	HTTPClient *http.Client
+	Logger     Logger
 
 	username string
 	password string
@@ -93,6 +99,7 @@ type NetworkClient struct {
 	loggedIn bool
 }
 
+// NetworkClientConfig contains configuration options for creating a NetworkClient.
 type NetworkClientConfig struct {
 	BaseURL            string
 	Site               string
@@ -102,6 +109,7 @@ type NetworkClientConfig struct {
 	Timeout            time.Duration
 }
 
+// NewNetworkClient creates a new Network API client with the given configuration.
 func NewNetworkClient(cfg NetworkClientConfig) (*NetworkClient, error) {
 	if cfg.BaseURL == "" {
 		return nil, fmt.Errorf("BaseURL is required")
@@ -164,11 +172,22 @@ func (c *NetworkClient) Login(ctx context.Context) error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
+	if c.Logger != nil {
+		c.Logger.Printf("-> POST %s", loginURL)
+	}
+
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
+		if c.Logger != nil {
+			c.Logger.Printf("<- error: %v", err)
+		}
 		return fmt.Errorf("executing login request: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if c.Logger != nil {
+		c.Logger.Printf("<- %d %s", resp.StatusCode, resp.Status)
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
@@ -193,11 +212,22 @@ func (c *NetworkClient) Logout(ctx context.Context) error {
 		return fmt.Errorf("creating logout request: %w", err)
 	}
 
+	if c.Logger != nil {
+		c.Logger.Printf("-> POST %s", logoutURL)
+	}
+
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
+		if c.Logger != nil {
+			c.Logger.Printf("<- error: %v", err)
+		}
 		return fmt.Errorf("executing logout request: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if c.Logger != nil {
+		c.Logger.Printf("<- %d %s", resp.StatusCode, resp.Status)
+	}
 
 	c.loggedIn = false
 	return nil
@@ -247,11 +277,22 @@ func (c *NetworkClient) do(ctx context.Context, method, path string, body interf
 		req.Header.Set("Content-Type", "application/json")
 	}
 
+	if c.Logger != nil {
+		c.Logger.Printf("-> %s %s", method, reqURL)
+	}
+
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
+		if c.Logger != nil {
+			c.Logger.Printf("<- error: %v", err)
+		}
 		return fmt.Errorf("executing request: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if c.Logger != nil {
+		c.Logger.Printf("<- %d %s", resp.StatusCode, resp.Status)
+	}
 
 	if resp.StatusCode >= 400 {
 		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
