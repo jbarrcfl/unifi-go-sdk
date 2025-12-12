@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+// SiteManager defines the interface for the UniFi Site Manager API.
+// This cloud-based API provides read-only access to hosts, sites, and devices.
 type SiteManager interface {
 	ListHosts(ctx context.Context, opts *ListHostsOptions) (*ListHostsResponse, error)
 	ListAllHosts(ctx context.Context) ([]Host, error)
@@ -26,11 +28,14 @@ type SiteManager interface {
 
 var _ SiteManager = (*SiteManagerClient)(nil)
 
+// SiteManagerClient is a client for the UniFi Site Manager API.
+// It handles authentication, pagination, and rate limit retry with exponential backoff.
 type SiteManagerClient struct {
 	BaseURL    string
 	APIKey     string
 	HTTPClient *http.Client
 	MaxRetries int
+	Logger     Logger
 }
 
 const (
@@ -45,6 +50,7 @@ const (
 
 var retryAfterRegex = regexp.MustCompile(`retry after ([\d.]+)s`)
 
+// NewSiteManagerClient creates a new Site Manager API client with the given API key.
 func NewSiteManagerClient(apiKey string) *SiteManagerClient {
 	return &SiteManagerClient{
 		BaseURL:    defaultBaseURL,
@@ -113,11 +119,22 @@ func (c *SiteManagerClient) doOnce(ctx context.Context, method, path string, res
 	req.Header.Set("X-API-KEY", c.APIKey)
 	req.Header.Set("Accept", "application/json")
 
+	if c.Logger != nil {
+		c.Logger.Printf("-> %s %s", method, reqURL)
+	}
+
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
+		if c.Logger != nil {
+			c.Logger.Printf("<- error: %v", err)
+		}
 		return fmt.Errorf("executing request: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if c.Logger != nil {
+		c.Logger.Printf("<- %d %s", resp.StatusCode, resp.Status)
+	}
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
