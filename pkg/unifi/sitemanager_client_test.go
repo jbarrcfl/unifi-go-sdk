@@ -982,3 +982,71 @@ func TestRetryAfterHeaderInAPIError(t *testing.T) {
 		t.Errorf("expected RetryAfterHeader '120', got %q", apiErr.RetryAfterHeader)
 	}
 }
+
+func TestListAllDevicesPagination(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		var resp map[string]any
+
+		if callCount == 1 {
+			resp = map[string]any{
+				"data": []map[string]any{
+					{
+						"hostId":   "host-1",
+						"hostName": "UDM-Pro",
+						"devices": []map[string]any{
+							{"id": "device-1", "name": "AP-1"},
+						},
+					},
+				},
+				"httpStatusCode": 200,
+				"traceId":        "trace-1",
+				"nextToken":      "page-2-token",
+			}
+		} else {
+			resp = map[string]any{
+				"data": []map[string]any{
+					{
+						"hostId":   "host-2",
+						"hostName": "UDM-SE",
+						"devices": []map[string]any{
+							{"id": "device-2", "name": "AP-2"},
+							{"id": "device-3", "name": "Switch"},
+						},
+					},
+				},
+				"httpStatusCode": 200,
+				"traceId":        "trace-2",
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := newTestSiteManagerClient(t, "test-key")
+	client.BaseURL = server.URL
+
+	hostDevices, err := client.ListAllDevices(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if callCount != 2 {
+		t.Errorf("expected 2 API calls, got %d", callCount)
+	}
+	if len(hostDevices) != 2 {
+		t.Errorf("expected 2 host device entries, got %d", len(hostDevices))
+	}
+	if hostDevices[0].HostID != "host-1" || hostDevices[1].HostID != "host-2" {
+		t.Errorf("unexpected host IDs: %v, %v", hostDevices[0].HostID, hostDevices[1].HostID)
+	}
+	if len(hostDevices[0].Devices) != 1 {
+		t.Errorf("expected 1 device in first host, got %d", len(hostDevices[0].Devices))
+	}
+	if len(hostDevices[1].Devices) != 2 {
+		t.Errorf("expected 2 devices in second host, got %d", len(hostDevices[1].Devices))
+	}
+}
