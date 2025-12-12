@@ -5,15 +5,17 @@ import (
 	"fmt"
 )
 
+// Sentinel errors for common HTTP status codes.
+// Use errors.Is() to check for these errors.
 var (
-	ErrBadRequest   = errors.New("bad request")
-	ErrUnauthorized = errors.New("unauthorized")
-	ErrForbidden    = errors.New("forbidden")
-	ErrNotFound     = errors.New("not found")
-	ErrConflict     = errors.New("conflict")
-	ErrRateLimited  = errors.New("rate limited")
-	ErrServerError  = errors.New("server error")
-	ErrBadGateway   = errors.New("bad gateway")
+	ErrBadRequest   = errors.New("bad request")   // 400
+	ErrUnauthorized = errors.New("unauthorized")  // 401
+	ErrForbidden    = errors.New("forbidden")     // 403
+	ErrNotFound     = errors.New("not found")     // 404
+	ErrConflict     = errors.New("conflict")      // 409
+	ErrRateLimited  = errors.New("rate limited")  // 429
+	ErrServerError  = errors.New("server error")  // 500
+	ErrBadGateway   = errors.New("bad gateway")   // 502
 )
 
 func sentinelForStatusCode(statusCode int) error {
@@ -39,6 +41,8 @@ func sentinelForStatusCode(statusCode int) error {
 	}
 }
 
+// APIError represents an error returned by the UniFi API.
+// It wraps a sentinel error that can be checked with errors.Is().
 type APIError struct {
 	StatusCode       int
 	Message          string
