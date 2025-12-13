@@ -20,7 +20,9 @@ Go SDK for UniFi APIs (Site Manager and Network).
 ## API Documentation
 
 - Site Manager API: https://developer.ui.com/site-manager-api/gettingstarted
-- Network API: Legacy REST at `/proxy/network/api/s/{site}/rest/*`
+- Network API:
+  - Legacy REST: `/proxy/network/api/s/{site}/rest/*`
+  - v2 API: `/proxy/network/v2/api/site/{site}/*`
 
 ## UniFi API Landscape
 
@@ -33,9 +35,12 @@ Two distinct APIs, both implemented:
    - Rate limits: 10K req/min (v1), 100 req/min (EA endpoints)
 
 2. **Network API** (local controller)
-   - Base: `https://<controller>/proxy/network/api/s/{site}/rest/`
+   - Legacy REST Base: `https://<controller>/proxy/network/api/s/{site}/rest/`
+   - v2 API Base: `https://<controller>/proxy/network/v2/api/site/{site}/`
    - Auth: Session-based (username/password → cookie)
-   - Full CRUD: networks, firewall rules/groups, port forwards, WLANs, port profiles, routes, user groups, RADIUS, DDNS
+   - Legacy REST CRUD: networks, firewall rules/groups, port forwards, WLANs, port profiles, routes, user groups, RADIUS, DDNS
+   - v2 API CRUD: firewall policies (zone-based), firewall zones, static DNS, traffic rules, traffic routes, NAT rules
+   - v2 API Read-only: active clients, network devices, ACL rules, QoS rules, content filtering, VPN connections, WAN SLAs
 
 ## Build & Test
 
@@ -98,7 +103,7 @@ Both APIs complete:
 - `ListSites`, `ListAllSites`
 - `ListDevices`, `ListAllDevices`
 
-**Network API**
+**Network API (Legacy REST)**
 - `Login`, `Logout`, `IsLoggedIn`
 - Networks: `List`, `Get`, `Create`, `Update`, `Delete`
 - Firewall Rules: `List`, `Get`, `Create`, `Update`, `Delete`
@@ -110,6 +115,21 @@ Both APIs complete:
 - User Groups: `List`, `Get`, `Create`, `Update`, `Delete`
 - RADIUS Profiles: `List`, `Get`, `Create`, `Update`, `Delete`
 - Dynamic DNS: `List`, `Get`, `Create`, `Update`, `Delete`
+
+**Network API (v2)**
+- Firewall Policies: `List`, `Get`, `Create`, `Update`, `Delete`
+- Firewall Zones: `List`, `Get`, `Create`, `Update`, `Delete`
+- Static DNS: `List`, `Get`, `Create`, `Update`, `Delete`
+- Traffic Rules: `List`, `Get`, `Create`, `Update`, `Delete`
+- Traffic Routes: `List`, `Get`, `Create`, `Update`, `Delete`
+- NAT Rules: `List`, `Get`, `Create`, `Update`, `Delete`
+- Active Clients: `ListActiveClients` (read-only)
+- Network Devices: `ListNetworkDevices` (read-only)
+- ACL Rules: `ListAclRules` (read-only)
+- QoS Rules: `ListQosRules` (read-only)
+- Content Filtering: `GetContentFiltering` (read-only)
+- VPN Connections: `ListVpnConnections` (read-only)
+- WAN SLAs: `ListWanSlas` (read-only)
 
 ## Related Projects
 

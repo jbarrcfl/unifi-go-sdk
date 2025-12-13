@@ -133,6 +133,8 @@ func main() {
 
 ### Network Methods
 
+#### Legacy REST API (full CRUD)
+
 | Resource | Methods |
 |----------|---------|
 | Networks | `ListNetworks`, `GetNetwork`, `CreateNetwork`, `UpdateNetwork`, `DeleteNetwork` |
@@ -145,6 +147,24 @@ func main() {
 | User Groups | `ListUserGroups`, `GetUserGroup`, `CreateUserGroup`, `UpdateUserGroup`, `DeleteUserGroup` |
 | RADIUS Profiles | `ListRADIUSProfiles`, `GetRADIUSProfile`, `CreateRADIUSProfile`, `UpdateRADIUSProfile`, `DeleteRADIUSProfile` |
 | Dynamic DNS | `ListDynamicDNS`, `GetDynamicDNS`, `CreateDynamicDNS`, `UpdateDynamicDNS`, `DeleteDynamicDNS` |
+
+#### v2 API (zone-based firewall, modern features)
+
+| Resource | Methods |
+|----------|---------|
+| Firewall Policies | `ListFirewallPolicies`, `GetFirewallPolicy`, `CreateFirewallPolicy`, `UpdateFirewallPolicy`, `DeleteFirewallPolicy` |
+| Firewall Zones | `ListFirewallZones`, `GetFirewallZone`, `CreateFirewallZone`, `UpdateFirewallZone`, `DeleteFirewallZone` |
+| Static DNS | `ListStaticDns`, `GetStaticDns`, `CreateStaticDns`, `UpdateStaticDns`, `DeleteStaticDns` |
+| Traffic Rules | `ListTrafficRules`, `GetTrafficRule`, `CreateTrafficRule`, `UpdateTrafficRule`, `DeleteTrafficRule` |
+| Traffic Routes | `ListTrafficRoutes`, `GetTrafficRoute`, `CreateTrafficRoute`, `UpdateTrafficRoute`, `DeleteTrafficRoute` |
+| NAT Rules | `ListNatRules`, `GetNatRule`, `CreateNatRule`, `UpdateNatRule`, `DeleteNatRule` |
+| Active Clients | `ListActiveClients` (read-only) |
+| Network Devices | `ListNetworkDevices` (read-only) |
+| ACL Rules | `ListAclRules` (read-only) |
+| QoS Rules | `ListQosRules` (read-only) |
+| Content Filtering | `GetContentFiltering` (read-only) |
+| VPN Connections | `ListVpnConnections` (read-only) |
+| WAN SLAs | `ListWanSlas` (read-only) |
 
 ### Network API Examples
 
