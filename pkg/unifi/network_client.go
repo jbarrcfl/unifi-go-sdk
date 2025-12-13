@@ -387,7 +387,8 @@ func (c *NetworkClient) doOnce(ctx context.Context, method, path string, bodyByt
 	}
 
 	var apiResp networkAPIResponse
-	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+	limitedBody := io.LimitReader(resp.Body, maxResponseBodySize)
+	if err := json.NewDecoder(limitedBody).Decode(&apiResp); err != nil {
 		return fmt.Errorf("decoding response: %w", err)
 	}
 
@@ -449,24 +450,26 @@ func (c *NetworkClient) GetNetwork(ctx context.Context, id string) (*Network, er
 
 func (c *NetworkClient) CreateNetwork(ctx context.Context, network *Network) (*Network, error) {
 	var networks []Network
-	err := c.do(ctx, "POST", c.restPath("networkconf"), network, &networks)
+	endpoint := c.restPath("networkconf")
+	err := c.do(ctx, "POST", endpoint, network, &networks)
 	if err != nil {
 		return nil, err
 	}
 	if len(networks) == 0 {
-		return nil, fmt.Errorf("no network returned from create")
+		return nil, &EmptyResponseError{Operation: "create", Resource: "network", Endpoint: endpoint}
 	}
 	return &networks[0], nil
 }
 
 func (c *NetworkClient) UpdateNetwork(ctx context.Context, id string, network *Network) (*Network, error) {
 	var networks []Network
-	err := c.do(ctx, "PUT", c.restPathWithID("networkconf", id), network, &networks)
+	endpoint := c.restPathWithID("networkconf", id)
+	err := c.do(ctx, "PUT", endpoint, network, &networks)
 	if err != nil {
 		return nil, err
 	}
 	if len(networks) == 0 {
-		return nil, fmt.Errorf("no network returned from update")
+		return nil, &EmptyResponseError{Operation: "update", Resource: "network", Endpoint: endpoint}
 	}
 	return &networks[0], nil
 }
@@ -500,24 +503,26 @@ func (c *NetworkClient) GetFirewallRule(ctx context.Context, id string) (*Firewa
 
 func (c *NetworkClient) CreateFirewallRule(ctx context.Context, rule *FirewallRule) (*FirewallRule, error) {
 	var rules []FirewallRule
-	err := c.do(ctx, "POST", c.restPath("firewallrule"), rule, &rules)
+	endpoint := c.restPath("firewallrule")
+	err := c.do(ctx, "POST", endpoint, rule, &rules)
 	if err != nil {
 		return nil, err
 	}
 	if len(rules) == 0 {
-		return nil, fmt.Errorf("no firewall rule returned from create")
+		return nil, &EmptyResponseError{Operation: "create", Resource: "firewall rule", Endpoint: endpoint}
 	}
 	return &rules[0], nil
 }
 
 func (c *NetworkClient) UpdateFirewallRule(ctx context.Context, id string, rule *FirewallRule) (*FirewallRule, error) {
 	var rules []FirewallRule
-	err := c.do(ctx, "PUT", c.restPathWithID("firewallrule", id), rule, &rules)
+	endpoint := c.restPathWithID("firewallrule", id)
+	err := c.do(ctx, "PUT", endpoint, rule, &rules)
 	if err != nil {
 		return nil, err
 	}
 	if len(rules) == 0 {
-		return nil, fmt.Errorf("no firewall rule returned from update")
+		return nil, &EmptyResponseError{Operation: "update", Resource: "firewall rule", Endpoint: endpoint}
 	}
 	return &rules[0], nil
 }
@@ -551,24 +556,26 @@ func (c *NetworkClient) GetFirewallGroup(ctx context.Context, id string) (*Firew
 
 func (c *NetworkClient) CreateFirewallGroup(ctx context.Context, group *FirewallGroup) (*FirewallGroup, error) {
 	var groups []FirewallGroup
-	err := c.do(ctx, "POST", c.restPath("firewallgroup"), group, &groups)
+	endpoint := c.restPath("firewallgroup")
+	err := c.do(ctx, "POST", endpoint, group, &groups)
 	if err != nil {
 		return nil, err
 	}
 	if len(groups) == 0 {
-		return nil, fmt.Errorf("no firewall group returned from create")
+		return nil, &EmptyResponseError{Operation: "create", Resource: "firewall group", Endpoint: endpoint}
 	}
 	return &groups[0], nil
 }
 
 func (c *NetworkClient) UpdateFirewallGroup(ctx context.Context, id string, group *FirewallGroup) (*FirewallGroup, error) {
 	var groups []FirewallGroup
-	err := c.do(ctx, "PUT", c.restPathWithID("firewallgroup", id), group, &groups)
+	endpoint := c.restPathWithID("firewallgroup", id)
+	err := c.do(ctx, "PUT", endpoint, group, &groups)
 	if err != nil {
 		return nil, err
 	}
 	if len(groups) == 0 {
-		return nil, fmt.Errorf("no firewall group returned from update")
+		return nil, &EmptyResponseError{Operation: "update", Resource: "firewall group", Endpoint: endpoint}
 	}
 	return &groups[0], nil
 }
@@ -602,24 +609,26 @@ func (c *NetworkClient) GetPortForward(ctx context.Context, id string) (*PortFor
 
 func (c *NetworkClient) CreatePortForward(ctx context.Context, forward *PortForward) (*PortForward, error) {
 	var forwards []PortForward
-	err := c.do(ctx, "POST", c.restPath("portforward"), forward, &forwards)
+	endpoint := c.restPath("portforward")
+	err := c.do(ctx, "POST", endpoint, forward, &forwards)
 	if err != nil {
 		return nil, err
 	}
 	if len(forwards) == 0 {
-		return nil, fmt.Errorf("no port forward returned from create")
+		return nil, &EmptyResponseError{Operation: "create", Resource: "port forward", Endpoint: endpoint}
 	}
 	return &forwards[0], nil
 }
 
 func (c *NetworkClient) UpdatePortForward(ctx context.Context, id string, forward *PortForward) (*PortForward, error) {
 	var forwards []PortForward
-	err := c.do(ctx, "PUT", c.restPathWithID("portforward", id), forward, &forwards)
+	endpoint := c.restPathWithID("portforward", id)
+	err := c.do(ctx, "PUT", endpoint, forward, &forwards)
 	if err != nil {
 		return nil, err
 	}
 	if len(forwards) == 0 {
-		return nil, fmt.Errorf("no port forward returned from update")
+		return nil, &EmptyResponseError{Operation: "update", Resource: "port forward", Endpoint: endpoint}
 	}
 	return &forwards[0], nil
 }
@@ -653,24 +662,26 @@ func (c *NetworkClient) GetWLAN(ctx context.Context, id string) (*WLANConf, erro
 
 func (c *NetworkClient) CreateWLAN(ctx context.Context, wlan *WLANConf) (*WLANConf, error) {
 	var wlans []WLANConf
-	err := c.do(ctx, "POST", c.restPath("wlanconf"), wlan, &wlans)
+	endpoint := c.restPath("wlanconf")
+	err := c.do(ctx, "POST", endpoint, wlan, &wlans)
 	if err != nil {
 		return nil, err
 	}
 	if len(wlans) == 0 {
-		return nil, fmt.Errorf("no WLAN returned from create")
+		return nil, &EmptyResponseError{Operation: "create", Resource: "WLAN", Endpoint: endpoint}
 	}
 	return &wlans[0], nil
 }
 
 func (c *NetworkClient) UpdateWLAN(ctx context.Context, id string, wlan *WLANConf) (*WLANConf, error) {
 	var wlans []WLANConf
-	err := c.do(ctx, "PUT", c.restPathWithID("wlanconf", id), wlan, &wlans)
+	endpoint := c.restPathWithID("wlanconf", id)
+	err := c.do(ctx, "PUT", endpoint, wlan, &wlans)
 	if err != nil {
 		return nil, err
 	}
 	if len(wlans) == 0 {
-		return nil, fmt.Errorf("no WLAN returned from update")
+		return nil, &EmptyResponseError{Operation: "update", Resource: "WLAN", Endpoint: endpoint}
 	}
 	return &wlans[0], nil
 }
@@ -704,24 +715,26 @@ func (c *NetworkClient) GetPortConf(ctx context.Context, id string) (*PortConf, 
 
 func (c *NetworkClient) CreatePortConf(ctx context.Context, portconf *PortConf) (*PortConf, error) {
 	var portconfs []PortConf
-	err := c.do(ctx, "POST", c.restPath("portconf"), portconf, &portconfs)
+	endpoint := c.restPath("portconf")
+	err := c.do(ctx, "POST", endpoint, portconf, &portconfs)
 	if err != nil {
 		return nil, err
 	}
 	if len(portconfs) == 0 {
-		return nil, fmt.Errorf("no port profile returned from create")
+		return nil, &EmptyResponseError{Operation: "create", Resource: "port profile", Endpoint: endpoint}
 	}
 	return &portconfs[0], nil
 }
 
 func (c *NetworkClient) UpdatePortConf(ctx context.Context, id string, portconf *PortConf) (*PortConf, error) {
 	var portconfs []PortConf
-	err := c.do(ctx, "PUT", c.restPathWithID("portconf", id), portconf, &portconfs)
+	endpoint := c.restPathWithID("portconf", id)
+	err := c.do(ctx, "PUT", endpoint, portconf, &portconfs)
 	if err != nil {
 		return nil, err
 	}
 	if len(portconfs) == 0 {
-		return nil, fmt.Errorf("no port profile returned from update")
+		return nil, &EmptyResponseError{Operation: "update", Resource: "port profile", Endpoint: endpoint}
 	}
 	return &portconfs[0], nil
 }
@@ -755,24 +768,26 @@ func (c *NetworkClient) GetRoute(ctx context.Context, id string) (*Routing, erro
 
 func (c *NetworkClient) CreateRoute(ctx context.Context, route *Routing) (*Routing, error) {
 	var routes []Routing
-	err := c.do(ctx, "POST", c.restPath("routing"), route, &routes)
+	endpoint := c.restPath("routing")
+	err := c.do(ctx, "POST", endpoint, route, &routes)
 	if err != nil {
 		return nil, err
 	}
 	if len(routes) == 0 {
-		return nil, fmt.Errorf("no route returned from create")
+		return nil, &EmptyResponseError{Operation: "create", Resource: "route", Endpoint: endpoint}
 	}
 	return &routes[0], nil
 }
 
 func (c *NetworkClient) UpdateRoute(ctx context.Context, id string, route *Routing) (*Routing, error) {
 	var routes []Routing
-	err := c.do(ctx, "PUT", c.restPathWithID("routing", id), route, &routes)
+	endpoint := c.restPathWithID("routing", id)
+	err := c.do(ctx, "PUT", endpoint, route, &routes)
 	if err != nil {
 		return nil, err
 	}
 	if len(routes) == 0 {
-		return nil, fmt.Errorf("no route returned from update")
+		return nil, &EmptyResponseError{Operation: "update", Resource: "route", Endpoint: endpoint}
 	}
 	return &routes[0], nil
 }
@@ -806,24 +821,26 @@ func (c *NetworkClient) GetUserGroup(ctx context.Context, id string) (*UserGroup
 
 func (c *NetworkClient) CreateUserGroup(ctx context.Context, group *UserGroup) (*UserGroup, error) {
 	var groups []UserGroup
-	err := c.do(ctx, "POST", c.restPath("usergroup"), group, &groups)
+	endpoint := c.restPath("usergroup")
+	err := c.do(ctx, "POST", endpoint, group, &groups)
 	if err != nil {
 		return nil, err
 	}
 	if len(groups) == 0 {
-		return nil, fmt.Errorf("no user group returned from create")
+		return nil, &EmptyResponseError{Operation: "create", Resource: "user group", Endpoint: endpoint}
 	}
 	return &groups[0], nil
 }
 
 func (c *NetworkClient) UpdateUserGroup(ctx context.Context, id string, group *UserGroup) (*UserGroup, error) {
 	var groups []UserGroup
-	err := c.do(ctx, "PUT", c.restPathWithID("usergroup", id), group, &groups)
+	endpoint := c.restPathWithID("usergroup", id)
+	err := c.do(ctx, "PUT", endpoint, group, &groups)
 	if err != nil {
 		return nil, err
 	}
 	if len(groups) == 0 {
-		return nil, fmt.Errorf("no user group returned from update")
+		return nil, &EmptyResponseError{Operation: "update", Resource: "user group", Endpoint: endpoint}
 	}
 	return &groups[0], nil
 }
@@ -857,24 +874,26 @@ func (c *NetworkClient) GetRADIUSProfile(ctx context.Context, id string) (*RADIU
 
 func (c *NetworkClient) CreateRADIUSProfile(ctx context.Context, profile *RADIUSProfile) (*RADIUSProfile, error) {
 	var profiles []RADIUSProfile
-	err := c.do(ctx, "POST", c.restPath("radiusprofile"), profile, &profiles)
+	endpoint := c.restPath("radiusprofile")
+	err := c.do(ctx, "POST", endpoint, profile, &profiles)
 	if err != nil {
 		return nil, err
 	}
 	if len(profiles) == 0 {
-		return nil, fmt.Errorf("no RADIUS profile returned from create")
+		return nil, &EmptyResponseError{Operation: "create", Resource: "RADIUS profile", Endpoint: endpoint}
 	}
 	return &profiles[0], nil
 }
 
 func (c *NetworkClient) UpdateRADIUSProfile(ctx context.Context, id string, profile *RADIUSProfile) (*RADIUSProfile, error) {
 	var profiles []RADIUSProfile
-	err := c.do(ctx, "PUT", c.restPathWithID("radiusprofile", id), profile, &profiles)
+	endpoint := c.restPathWithID("radiusprofile", id)
+	err := c.do(ctx, "PUT", endpoint, profile, &profiles)
 	if err != nil {
 		return nil, err
 	}
 	if len(profiles) == 0 {
-		return nil, fmt.Errorf("no RADIUS profile returned from update")
+		return nil, &EmptyResponseError{Operation: "update", Resource: "RADIUS profile", Endpoint: endpoint}
 	}
 	return &profiles[0], nil
 }
@@ -908,24 +927,26 @@ func (c *NetworkClient) GetDynamicDNS(ctx context.Context, id string) (*DynamicD
 
 func (c *NetworkClient) CreateDynamicDNS(ctx context.Context, config *DynamicDNS) (*DynamicDNS, error) {
 	var configs []DynamicDNS
-	err := c.do(ctx, "POST", c.restPath("dynamicdns"), config, &configs)
+	endpoint := c.restPath("dynamicdns")
+	err := c.do(ctx, "POST", endpoint, config, &configs)
 	if err != nil {
 		return nil, err
 	}
 	if len(configs) == 0 {
-		return nil, fmt.Errorf("no dynamic DNS config returned from create")
+		return nil, &EmptyResponseError{Operation: "create", Resource: "dynamic DNS config", Endpoint: endpoint}
 	}
 	return &configs[0], nil
 }
 
 func (c *NetworkClient) UpdateDynamicDNS(ctx context.Context, id string, config *DynamicDNS) (*DynamicDNS, error) {
 	var configs []DynamicDNS
-	err := c.do(ctx, "PUT", c.restPathWithID("dynamicdns", id), config, &configs)
+	endpoint := c.restPathWithID("dynamicdns", id)
+	err := c.do(ctx, "PUT", endpoint, config, &configs)
 	if err != nil {
 		return nil, err
 	}
 	if len(configs) == 0 {
-		return nil, fmt.Errorf("no dynamic DNS config returned from update")
+		return nil, &EmptyResponseError{Operation: "update", Resource: "dynamic DNS config", Endpoint: endpoint}
 	}
 	return &configs[0], nil
 }

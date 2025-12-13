@@ -51,14 +51,15 @@ type SiteManagerClientConfig struct {
 }
 
 const (
-	defaultBaseURL      = "https://api.ui.com"
-	defaultRetries      = 3
-	defaultTimeout      = 30 * time.Second
-	defaultMaxRetryWait = 60 * time.Second
-	maxErrorBodySize    = 64 * 1024
-	baseBackoff         = 1 * time.Second
-	maxBackoff          = 30 * time.Second
-	jitterFraction      = 0.5
+	defaultBaseURL       = "https://api.ui.com"
+	defaultRetries       = 3
+	defaultTimeout       = 30 * time.Second
+	defaultMaxRetryWait  = 60 * time.Second
+	maxErrorBodySize     = 64 * 1024       // 64KB for error responses
+	maxResponseBodySize  = 10 * 1024 * 1024 // 10MB for success responses
+	baseBackoff          = 1 * time.Second
+	maxBackoff           = 30 * time.Second
+	jitterFraction       = 0.5
 )
 
 var retryAfterRegex = regexp.MustCompile(`retry after ([\d.]+)s`)
@@ -224,7 +225,8 @@ func (c *SiteManagerClient) doOnce(ctx context.Context, method, path string, res
 	}
 
 	if result != nil {
-		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+		limitedBody := io.LimitReader(resp.Body, maxResponseBodySize)
+		if err := json.NewDecoder(limitedBody).Decode(result); err != nil {
 			return fmt.Errorf("decoding response: %w", err)
 		}
 	}
