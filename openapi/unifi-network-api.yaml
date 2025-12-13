@@ -1,0 +1,2421 @@
+openapi: 3.0.3
+info:
+  title: UniFi Network API
+  description: |
+    UniFi Network Controller API - discovered via browser inspection.
+
+    Two API versions exist:
+    - **v2 API**: Newer endpoints at `/proxy/network/v2/api/site/{site}/...`
+    - **Legacy REST API**: Older endpoints at `/proxy/network/api/s/{site}/rest/...`
+
+    Authentication is session-based via username/password login.
+  version: 9.5.21
+  contact:
+    name: UniFi Network
+servers:
+  - url: https://{controller}/proxy/network
+    description: UniFi Controller
+    variables:
+      controller:
+        default: 192.168.1.1
+        description: Controller IP or hostname
+
+tags:
+  - name: Authentication
+    description: Session-based authentication
+  - name: Policy Engine
+    description: Zone-based firewall, policies, and traffic rules (v2 API)
+  - name: Networks
+    description: Network configuration (Legacy REST)
+  - name: Firewall
+    description: Firewall rules and groups (Legacy REST)
+  - name: Wireless
+    description: WLAN configuration (Legacy REST)
+  - name: Port Forwards
+    description: Port forwarding rules (Legacy REST)
+  - name: Routing
+    description: Static routes (Legacy REST)
+  - name: Port Profiles
+    description: Switch port profiles (Legacy REST)
+  - name: User Groups
+    description: User rate limiting groups (Legacy REST)
+  - name: RADIUS
+    description: RADIUS profiles (Legacy REST)
+  - name: Dynamic DNS
+    description: Dynamic DNS configuration (Legacy REST)
+  - name: Static DNS
+    description: Static DNS records (v2 API)
+  - name: Clients
+    description: Client devices (v2 API)
+  - name: Devices
+    description: Network devices (v2 API)
+  - name: VPN
+    description: VPN connections (v2 API)
+
+paths:
+  /api/login:
+    post:
+      tags: [Authentication]
+      summary: Login to controller
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: Session cookie
+
+  /api/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout from controller
+      operationId: logout
+      responses:
+        '200':
+          description: Logout successful
+
+  # ============================================
+  # Policy Engine v2 API
+  # ============================================
+
+  /v2/api/site/{site}/firewall-policies:
+    get:
+      tags: [Policy Engine]
+      summary: List firewall policies
+      operationId: listFirewallPolicies
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: List of firewall policies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FirewallPolicy'
+    post:
+      tags: [Policy Engine]
+      summary: Create firewall policy
+      operationId: createFirewallPolicy
+      parameters:
+        - $ref: '#/components/parameters/site'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FirewallPolicyCreate'
+      responses:
+        '200':
+          description: Policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FirewallPolicy'
+
+  /v2/api/site/{site}/firewall-policies/{id}:
+    get:
+      tags: [Policy Engine]
+      summary: Get firewall policy
+      operationId: getFirewallPolicy
+      parameters:
+        - $ref: '#/components/parameters/site'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Firewall policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FirewallPolicy'
+    put:
+      tags: [Policy Engine]
+      summary: Update firewall policy
+      operationId: updateFirewallPolicy
+      parameters:
+        - $ref: '#/components/parameters/site'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FirewallPolicy'
+      responses:
+        '200':
+          description: Policy updated
+    delete:
+      tags: [Policy Engine]
+      summary: Delete firewall policy
+      operationId: deleteFirewallPolicy
+      parameters:
+        - $ref: '#/components/parameters/site'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Policy deleted
+
+  /v2/api/site/{site}/firewall/zone:
+    get:
+      tags: [Policy Engine]
+      summary: List firewall zones
+      operationId: listFirewallZones
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: List of firewall zones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FirewallZone'
+    post:
+      tags: [Policy Engine]
+      summary: Create firewall zone
+      operationId: createFirewallZone
+      parameters:
+        - $ref: '#/components/parameters/site'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FirewallZoneCreate'
+      responses:
+        '200':
+          description: Zone created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FirewallZone'
+
+  /v2/api/site/{site}/firewall/zone/{id}:
+    get:
+      tags: [Policy Engine]
+      summary: Get firewall zone
+      operationId: getFirewallZone
+      parameters:
+        - $ref: '#/components/parameters/site'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Firewall zone
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FirewallZone'
+    put:
+      tags: [Policy Engine]
+      summary: Update firewall zone
+      operationId: updateFirewallZone
+      parameters:
+        - $ref: '#/components/parameters/site'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FirewallZone'
+      responses:
+        '200':
+          description: Zone updated
+    delete:
+      tags: [Policy Engine]
+      summary: Delete firewall zone
+      operationId: deleteFirewallZone
+      parameters:
+        - $ref: '#/components/parameters/site'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Zone deleted
+
+  /v2/api/site/{site}/trafficrules:
+    get:
+      tags: [Policy Engine]
+      summary: List traffic rules
+      operationId: listTrafficRules
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: List of traffic rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrafficRule'
+    post:
+      tags: [Policy Engine]
+      summary: Create traffic rule
+      operationId: createTrafficRule
+      parameters:
+        - $ref: '#/components/parameters/site'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrafficRuleCreate'
+      responses:
+        '200':
+          description: Rule created
+
+  /v2/api/site/{site}/trafficroutes:
+    get:
+      tags: [Policy Engine]
+      summary: List traffic routes
+      operationId: listTrafficRoutes
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: List of traffic routes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrafficRoute'
+    post:
+      tags: [Policy Engine]
+      summary: Create traffic route
+      operationId: createTrafficRoute
+      parameters:
+        - $ref: '#/components/parameters/site'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrafficRouteCreate'
+      responses:
+        '200':
+          description: Route created
+
+  /v2/api/site/{site}/nat:
+    get:
+      tags: [Policy Engine]
+      summary: List NAT rules
+      operationId: listNatRules
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: List of NAT rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NatRule'
+    post:
+      tags: [Policy Engine]
+      summary: Create NAT rule
+      operationId: createNatRule
+      parameters:
+        - $ref: '#/components/parameters/site'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NatRuleCreate'
+      responses:
+        '200':
+          description: Rule created
+
+  /v2/api/site/{site}/static-dns:
+    get:
+      tags: [Static DNS]
+      summary: List static DNS records
+      operationId: listStaticDns
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: List of static DNS records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaticDns'
+    post:
+      tags: [Static DNS]
+      summary: Create static DNS record
+      operationId: createStaticDns
+      parameters:
+        - $ref: '#/components/parameters/site'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaticDnsCreate'
+      responses:
+        '200':
+          description: Record created
+
+  /v2/api/site/{site}/static-dns/{id}:
+    get:
+      tags: [Static DNS]
+      summary: Get static DNS record
+      operationId: getStaticDns
+      parameters:
+        - $ref: '#/components/parameters/site'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Static DNS record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaticDns'
+    put:
+      tags: [Static DNS]
+      summary: Update static DNS record
+      operationId: updateStaticDns
+      parameters:
+        - $ref: '#/components/parameters/site'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaticDns'
+      responses:
+        '200':
+          description: Record updated
+    delete:
+      tags: [Static DNS]
+      summary: Delete static DNS record
+      operationId: deleteStaticDns
+      parameters:
+        - $ref: '#/components/parameters/site'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Record deleted
+
+  /v2/api/site/{site}/acl-rules:
+    get:
+      tags: [Policy Engine]
+      summary: List ACL rules
+      operationId: listAclRules
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: List of ACL rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AclRule'
+
+  /v2/api/site/{site}/qos-rules:
+    get:
+      tags: [Policy Engine]
+      summary: List QoS rules
+      operationId: listQosRules
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: List of QoS rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QosRule'
+
+  /v2/api/site/{site}/content-filtering:
+    get:
+      tags: [Policy Engine]
+      summary: Get content filtering config
+      operationId: getContentFiltering
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: Content filtering configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentFiltering'
+
+  # ============================================
+  # Clients and Devices v2 API
+  # ============================================
+
+  /v2/api/site/{site}/clients/active:
+    get:
+      tags: [Clients]
+      summary: List active clients
+      operationId: listActiveClients
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: List of active clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Client'
+
+  /v2/api/site/{site}/device:
+    get:
+      tags: [Devices]
+      summary: List network devices
+      operationId: listDevices
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: Network devices organized by type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceList'
+
+  /v2/api/site/{site}/vpn/connections:
+    get:
+      tags: [VPN]
+      summary: List VPN connections
+      operationId: listVpnConnections
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: VPN connections
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connections:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VpnConnection'
+
+  /v2/api/site/{site}/wan-slas:
+    get:
+      tags: [VPN]
+      summary: List WAN SLAs
+      operationId: listWanSlas
+      parameters:
+        - $ref: '#/components/parameters/site'
+      responses:
+        '200':
+          description: WAN SLA configurations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WanSla'
+
+  # ============================================
+  # Legacy REST API
+  # ============================================
+
+  /api/s/{site}/rest/networkconf:
+    get:
+      tags: [Networks]
+      summary: List networks
+      operationId: listNetworks
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      responses:
+        '200':
+          description: List of networks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
+    post:
+      tags: [Networks]
+      summary: Create network
+      operationId: createNetwork
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NetworkCreate'
+      responses:
+        '200':
+          description: Network created
+
+  /api/s/{site}/rest/networkconf/{id}:
+    get:
+      tags: [Networks]
+      summary: Get network
+      operationId: getNetwork
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Network configuration
+    put:
+      tags: [Networks]
+      summary: Update network
+      operationId: updateNetwork
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Network'
+      responses:
+        '200':
+          description: Network updated
+    delete:
+      tags: [Networks]
+      summary: Delete network
+      operationId: deleteNetwork
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Network deleted
+
+  /api/s/{site}/rest/firewallrule:
+    get:
+      tags: [Firewall]
+      summary: List firewall rules (legacy)
+      operationId: listFirewallRulesLegacy
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      responses:
+        '200':
+          description: List of firewall rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
+
+  /api/s/{site}/rest/firewallgroup:
+    get:
+      tags: [Firewall]
+      summary: List firewall groups
+      operationId: listFirewallGroups
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      responses:
+        '200':
+          description: List of firewall groups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
+    post:
+      tags: [Firewall]
+      summary: Create firewall group
+      operationId: createFirewallGroup
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FirewallGroupCreate'
+      responses:
+        '200':
+          description: Group created
+
+  /api/s/{site}/rest/firewallgroup/{id}:
+    get:
+      tags: [Firewall]
+      summary: Get firewall group
+      operationId: getFirewallGroup
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Firewall group
+    put:
+      tags: [Firewall]
+      summary: Update firewall group
+      operationId: updateFirewallGroup
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FirewallGroup'
+      responses:
+        '200':
+          description: Group updated
+    delete:
+      tags: [Firewall]
+      summary: Delete firewall group
+      operationId: deleteFirewallGroup
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Group deleted
+
+  /api/s/{site}/rest/wlanconf:
+    get:
+      tags: [Wireless]
+      summary: List WLANs
+      operationId: listWlans
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      responses:
+        '200':
+          description: List of WLANs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
+    post:
+      tags: [Wireless]
+      summary: Create WLAN
+      operationId: createWlan
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WlanCreate'
+      responses:
+        '200':
+          description: WLAN created
+
+  /api/s/{site}/rest/wlanconf/{id}:
+    get:
+      tags: [Wireless]
+      summary: Get WLAN
+      operationId: getWlan
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: WLAN configuration
+    put:
+      tags: [Wireless]
+      summary: Update WLAN
+      operationId: updateWlan
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Wlan'
+      responses:
+        '200':
+          description: WLAN updated
+    delete:
+      tags: [Wireless]
+      summary: Delete WLAN
+      operationId: deleteWlan
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: WLAN deleted
+
+  /api/s/{site}/rest/portforward:
+    get:
+      tags: [Port Forwards]
+      summary: List port forwards
+      operationId: listPortForwards
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      responses:
+        '200':
+          description: List of port forwards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
+    post:
+      tags: [Port Forwards]
+      summary: Create port forward
+      operationId: createPortForward
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortForwardCreate'
+      responses:
+        '200':
+          description: Port forward created
+
+  /api/s/{site}/rest/portforward/{id}:
+    get:
+      tags: [Port Forwards]
+      summary: Get port forward
+      operationId: getPortForward
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Port forward
+    put:
+      tags: [Port Forwards]
+      summary: Update port forward
+      operationId: updatePortForward
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortForward'
+      responses:
+        '200':
+          description: Port forward updated
+    delete:
+      tags: [Port Forwards]
+      summary: Delete port forward
+      operationId: deletePortForward
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Port forward deleted
+
+  /api/s/{site}/rest/routing:
+    get:
+      tags: [Routing]
+      summary: List static routes
+      operationId: listStaticRoutes
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      responses:
+        '200':
+          description: List of static routes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
+    post:
+      tags: [Routing]
+      summary: Create static route
+      operationId: createStaticRoute
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaticRouteCreate'
+      responses:
+        '200':
+          description: Route created
+
+  /api/s/{site}/rest/routing/{id}:
+    get:
+      tags: [Routing]
+      summary: Get static route
+      operationId: getStaticRoute
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Static route
+    put:
+      tags: [Routing]
+      summary: Update static route
+      operationId: updateStaticRoute
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaticRoute'
+      responses:
+        '200':
+          description: Route updated
+    delete:
+      tags: [Routing]
+      summary: Delete static route
+      operationId: deleteStaticRoute
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Route deleted
+
+  /api/s/{site}/rest/portconf:
+    get:
+      tags: [Port Profiles]
+      summary: List port profiles
+      operationId: listPortProfiles
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      responses:
+        '200':
+          description: List of port profiles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
+    post:
+      tags: [Port Profiles]
+      summary: Create port profile
+      operationId: createPortProfile
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortProfileCreate'
+      responses:
+        '200':
+          description: Profile created
+
+  /api/s/{site}/rest/portconf/{id}:
+    get:
+      tags: [Port Profiles]
+      summary: Get port profile
+      operationId: getPortProfile
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Port profile
+    put:
+      tags: [Port Profiles]
+      summary: Update port profile
+      operationId: updatePortProfile
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortProfile'
+      responses:
+        '200':
+          description: Profile updated
+    delete:
+      tags: [Port Profiles]
+      summary: Delete port profile
+      operationId: deletePortProfile
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Profile deleted
+
+  /api/s/{site}/rest/usergroup:
+    get:
+      tags: [User Groups]
+      summary: List user groups
+      operationId: listUserGroups
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      responses:
+        '200':
+          description: List of user groups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
+    post:
+      tags: [User Groups]
+      summary: Create user group
+      operationId: createUserGroup
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserGroupCreate'
+      responses:
+        '200':
+          description: Group created
+
+  /api/s/{site}/rest/usergroup/{id}:
+    get:
+      tags: [User Groups]
+      summary: Get user group
+      operationId: getUserGroup
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: User group
+    put:
+      tags: [User Groups]
+      summary: Update user group
+      operationId: updateUserGroup
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserGroup'
+      responses:
+        '200':
+          description: Group updated
+    delete:
+      tags: [User Groups]
+      summary: Delete user group
+      operationId: deleteUserGroup
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Group deleted
+
+  /api/s/{site}/rest/radiusprofile:
+    get:
+      tags: [RADIUS]
+      summary: List RADIUS profiles
+      operationId: listRadiusProfiles
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      responses:
+        '200':
+          description: List of RADIUS profiles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
+    post:
+      tags: [RADIUS]
+      summary: Create RADIUS profile
+      operationId: createRadiusProfile
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RadiusProfileCreate'
+      responses:
+        '200':
+          description: Profile created
+
+  /api/s/{site}/rest/radiusprofile/{id}:
+    get:
+      tags: [RADIUS]
+      summary: Get RADIUS profile
+      operationId: getRadiusProfile
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: RADIUS profile
+    put:
+      tags: [RADIUS]
+      summary: Update RADIUS profile
+      operationId: updateRadiusProfile
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RadiusProfile'
+      responses:
+        '200':
+          description: Profile updated
+    delete:
+      tags: [RADIUS]
+      summary: Delete RADIUS profile
+      operationId: deleteRadiusProfile
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Profile deleted
+
+  /api/s/{site}/rest/dynamicdns:
+    get:
+      tags: [Dynamic DNS]
+      summary: List dynamic DNS configs
+      operationId: listDynamicDns
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      responses:
+        '200':
+          description: List of DDNS configurations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
+    post:
+      tags: [Dynamic DNS]
+      summary: Create dynamic DNS config
+      operationId: createDynamicDns
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DynamicDnsCreate'
+      responses:
+        '200':
+          description: Config created
+
+  /api/s/{site}/rest/dynamicdns/{id}:
+    get:
+      tags: [Dynamic DNS]
+      summary: Get dynamic DNS config
+      operationId: getDynamicDns
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: DDNS configuration
+    put:
+      tags: [Dynamic DNS]
+      summary: Update dynamic DNS config
+      operationId: updateDynamicDns
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DynamicDns'
+      responses:
+        '200':
+          description: Config updated
+    delete:
+      tags: [Dynamic DNS]
+      summary: Delete dynamic DNS config
+      operationId: deleteDynamicDns
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Config deleted
+
+components:
+  parameters:
+    site:
+      name: site
+      in: path
+      required: true
+      description: Site name (usually 'default')
+      schema:
+        type: string
+        default: default
+    siteLegacy:
+      name: site
+      in: path
+      required: true
+      description: Site name (usually 'default')
+      schema:
+        type: string
+        default: default
+    id:
+      name: id
+      in: path
+      required: true
+      description: Resource ID
+      schema:
+        type: string
+
+  schemas:
+    RestResponse:
+      type: object
+      properties:
+        meta:
+          type: object
+          properties:
+            rc:
+              type: string
+              enum: [ok, error]
+        data:
+          type: array
+          items:
+            type: object
+
+    # ============================================
+    # Policy Engine Schemas
+    # ============================================
+
+    FirewallPolicy:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        action:
+          type: string
+          enum: [ALLOW, BLOCK, REJECT]
+        protocol:
+          type: string
+          enum: [all, tcp_udp, tcp, udp, icmp, icmpv6]
+        ip_version:
+          type: string
+          enum: [BOTH, IPV4, IPV6]
+        index:
+          type: integer
+          description: Rule priority (lower = higher priority)
+        logging:
+          type: boolean
+        predefined:
+          type: boolean
+          description: Whether this is a system-generated rule
+        connection_state_type:
+          type: string
+          enum: [ALL, RESPOND_ONLY, CUSTOM]
+        connection_states:
+          type: array
+          items:
+            type: string
+            enum: [RELATED, ESTABLISHED, NEW, INVALID]
+        create_allow_respond:
+          type: boolean
+        match_ip_sec:
+          type: boolean
+        match_opposite_protocol:
+          type: boolean
+        icmp_typename:
+          type: string
+        icmp_v6_typename:
+          type: string
+        schedule:
+          $ref: '#/components/schemas/Schedule'
+        source:
+          $ref: '#/components/schemas/PolicyEndpoint'
+        destination:
+          $ref: '#/components/schemas/PolicyEndpoint'
+        origin_id:
+          type: string
+          description: ID of the resource that created this policy (e.g., port forward)
+        origin_type:
+          type: string
+          enum: [custom_firewall_rule, port_forward]
+
+    FirewallPolicyCreate:
+      type: object
+      required: [name, action, source, destination]
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+        action:
+          type: string
+          enum: [ALLOW, BLOCK, REJECT]
+        protocol:
+          type: string
+          default: all
+        ip_version:
+          type: string
+          default: BOTH
+        index:
+          type: integer
+        logging:
+          type: boolean
+        connection_state_type:
+          type: string
+        connection_states:
+          type: array
+          items:
+            type: string
+        schedule:
+          $ref: '#/components/schemas/Schedule'
+        source:
+          $ref: '#/components/schemas/PolicyEndpoint'
+        destination:
+          $ref: '#/components/schemas/PolicyEndpoint'
+
+    PolicyEndpoint:
+      type: object
+      properties:
+        zone_id:
+          type: string
+        matching_target:
+          type: string
+          enum: [ANY, IP, NETWORK, DOMAIN, REGION, PORT_GROUP, ADDRESS_GROUP]
+        matching_target_type:
+          type: string
+          enum: [SPECIFIC, OBJECT]
+        ips:
+          type: array
+          items:
+            type: string
+          description: IP addresses or CIDR ranges
+        mac:
+          type: string
+        match_mac:
+          type: boolean
+        match_opposite_ips:
+          type: boolean
+        port:
+          type: string
+          description: Port or port range (e.g., "80" or "8000-9000")
+        port_matching_type:
+          type: string
+          enum: [ANY, SPECIFIC]
+        match_opposite_ports:
+          type: boolean
+        network_id:
+          type: string
+        client_macs:
+          type: array
+          items:
+            type: string
+
+    Schedule:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [ALWAYS, CUSTOM]
+        time_range_start:
+          type: string
+        time_range_end:
+          type: string
+        days_of_week:
+          type: array
+          items:
+            type: string
+            enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+
+    FirewallZone:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        zone_key:
+          type: string
+          enum: [internal, external, gateway, vpn, hotspot, dmz]
+          nullable: true
+        default_zone:
+          type: boolean
+        attr_no_edit:
+          type: boolean
+        network_ids:
+          type: array
+          items:
+            type: string
+
+    FirewallZoneCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        network_ids:
+          type: array
+          items:
+            type: string
+
+    TrafficRule:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        action:
+          type: string
+        matching_target:
+          type: string
+        target_devices:
+          type: array
+          items:
+            type: object
+
+    TrafficRuleCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+        action:
+          type: string
+
+    TrafficRoute:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+
+    TrafficRouteCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+
+    NatRule:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        type:
+          type: string
+          enum: [SOURCE, DESTINATION, MASQUERADE]
+
+    NatRuleCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+        type:
+          type: string
+
+    AclRule:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+
+    QosRule:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+
+    ContentFiltering:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        blocked_categories:
+          type: array
+          items:
+            type: string
+
+    StaticDns:
+      type: object
+      properties:
+        _id:
+          type: string
+        key:
+          type: string
+          description: DNS record name (hostname or FQDN)
+        value:
+          type: string
+          description: IP address or target value
+        record_type:
+          type: string
+          enum: [A, AAAA, CNAME, MX, NS, TXT, SRV]
+        enabled:
+          type: boolean
+        ttl:
+          type: integer
+        port:
+          type: integer
+          description: Port for SRV records
+        priority:
+          type: integer
+          description: Priority for MX/SRV records
+        weight:
+          type: integer
+          description: Weight for SRV records
+
+    StaticDnsCreate:
+      type: object
+      required: [key, value, record_type]
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+        record_type:
+          type: string
+          enum: [A, AAAA, CNAME, MX, NS, TXT, SRV]
+        enabled:
+          type: boolean
+          default: true
+        ttl:
+          type: integer
+        port:
+          type: integer
+        priority:
+          type: integer
+        weight:
+          type: integer
+
+    # ============================================
+    # Legacy REST Schemas
+    # ============================================
+
+    Network:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        purpose:
+          type: string
+          enum: [wan, corporate, vlan-only, remote-user-vpn, site-vpn]
+        site_id:
+          type: string
+        setting_preference:
+          type: string
+          enum: [manual, auto]
+        wan_type:
+          type: string
+          enum: [dhcp, static, pppoe]
+        wan_ip:
+          type: string
+        wan_netmask:
+          type: string
+        wan_gateway:
+          type: string
+        wan_networkgroup:
+          type: string
+          enum: [WAN, WAN2]
+        wan_ip_aliases:
+          type: array
+          items:
+            type: string
+        wan_provider_capabilities:
+          type: object
+          properties:
+            upload_kilobits_per_second:
+              type: integer
+            download_kilobits_per_second:
+              type: integer
+        wan_dns_preference:
+          type: string
+          enum: [auto, manual]
+        wan_dns1:
+          type: string
+        wan_dns2:
+          type: string
+        firewall_zone_id:
+          type: string
+        vlan_enabled:
+          type: boolean
+        vlan:
+          type: integer
+        ip_subnet:
+          type: string
+        dhcpd_enabled:
+          type: boolean
+        dhcpd_start:
+          type: string
+        dhcpd_stop:
+          type: string
+        dhcpd_leasetime:
+          type: integer
+        dhcpdv6_enabled:
+          type: boolean
+        ipv6_interface_type:
+          type: string
+        igmp_snooping:
+          type: boolean
+        dhcp_relay_enabled:
+          type: boolean
+
+    NetworkCreate:
+      type: object
+      required: [name, purpose]
+      properties:
+        name:
+          type: string
+        purpose:
+          type: string
+        vlan:
+          type: integer
+        ip_subnet:
+          type: string
+        dhcpd_enabled:
+          type: boolean
+        dhcpd_start:
+          type: string
+        dhcpd_stop:
+          type: string
+
+    FirewallGroup:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        group_type:
+          type: string
+          enum: [address-group, port-group, ipv6-address-group]
+        group_members:
+          type: array
+          items:
+            type: string
+        site_id:
+          type: string
+
+    FirewallGroupCreate:
+      type: object
+      required: [name, group_type, group_members]
+      properties:
+        name:
+          type: string
+        group_type:
+          type: string
+          enum: [address-group, port-group, ipv6-address-group]
+        group_members:
+          type: array
+          items:
+            type: string
+
+    Wlan:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        security:
+          type: string
+          enum: [wpapsk, open, wpaeap, wep]
+        wpa_mode:
+          type: string
+          enum: [wpa2, wpa3]
+        wpa_enc:
+          type: string
+          enum: [ccmp, auto]
+        wpa3_support:
+          type: boolean
+        wpa3_transition:
+          type: boolean
+        x_passphrase:
+          type: string
+        networkconf_id:
+          type: string
+        usergroup_id:
+          type: string
+        ap_group_ids:
+          type: array
+          items:
+            type: string
+        ap_group_mode:
+          type: string
+          enum: [all, specific]
+        wlan_bands:
+          type: array
+          items:
+            type: string
+            enum: [2g, 5g, 6g]
+        hide_ssid:
+          type: boolean
+        is_guest:
+          type: boolean
+        l2_isolation:
+          type: boolean
+        mac_filter_enabled:
+          type: boolean
+        mac_filter_policy:
+          type: string
+          enum: [allow, deny]
+        mac_filter_list:
+          type: array
+          items:
+            type: string
+        fast_roaming_enabled:
+          type: boolean
+        pmf_mode:
+          type: string
+          enum: [disabled, optional, required]
+        site_id:
+          type: string
+
+    WlanCreate:
+      type: object
+      required: [name, security, networkconf_id]
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+        security:
+          type: string
+        wpa_mode:
+          type: string
+        x_passphrase:
+          type: string
+        networkconf_id:
+          type: string
+        usergroup_id:
+          type: string
+        wlan_bands:
+          type: array
+          items:
+            type: string
+
+    PortForward:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        pfwd_interface:
+          type: string
+          enum: [wan, wan2, both]
+        proto:
+          type: string
+          enum: [tcp_udp, tcp, udp]
+        dst_port:
+          type: string
+          description: External port or range (e.g., "80" or "8000-9000")
+        fwd:
+          type: string
+          description: Internal IP address
+        fwd_port:
+          type: string
+          description: Internal port or range
+        destination_ip:
+          type: string
+          description: '"any" or specific WAN IP'
+        destination_ips:
+          type: array
+          items:
+            type: string
+        log:
+          type: boolean
+        src_limiting_enabled:
+          type: boolean
+        src:
+          type: string
+          description: Source IP restriction
+        site_id:
+          type: string
+
+    PortForwardCreate:
+      type: object
+      required: [name, dst_port, fwd, fwd_port, proto]
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+        pfwd_interface:
+          type: string
+          default: wan
+        proto:
+          type: string
+        dst_port:
+          type: string
+        fwd:
+          type: string
+        fwd_port:
+          type: string
+        destination_ip:
+          type: string
+          default: any
+        log:
+          type: boolean
+
+    StaticRoute:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        type:
+          type: string
+          enum: [static-route]
+        static-route_type:
+          type: string
+          enum: [nexthop-route, interface-route, blackhole]
+        static-route_network:
+          type: string
+          description: Destination network in CIDR notation
+        static-route_nexthop:
+          type: string
+          description: Next hop IP for nexthop-route type
+        static-route_interface:
+          type: string
+          description: Interface ID for interface-route type
+        static-route_distance:
+          type: integer
+          description: Administrative distance
+        gateway_type:
+          type: string
+        gateway_device:
+          type: string
+          description: MAC address of gateway device
+        site_id:
+          type: string
+
+    StaticRouteCreate:
+      type: object
+      required: [name, type, static-route_network]
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+        type:
+          type: string
+          default: static-route
+        static-route_type:
+          type: string
+        static-route_network:
+          type: string
+        static-route_nexthop:
+          type: string
+        static-route_interface:
+          type: string
+        static-route_distance:
+          type: integer
+
+    PortProfile:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        forward:
+          type: string
+          enum: [native, all, disabled, customize]
+        native_networkconf_id:
+          type: string
+        tagged_networkconf_ids:
+          type: array
+          items:
+            type: string
+        voice_networkconf_id:
+          type: string
+        op_mode:
+          type: string
+          enum: [switch, mirror, aggregate]
+        poe_mode:
+          type: string
+          enum: [auto, off, pasv24, passthrough]
+        autoneg:
+          type: boolean
+        dot1x_ctrl:
+          type: string
+          enum: [force_authorized, force_unauthorized, auto, mac_based, multi_host]
+        dot1x_idle_timeout:
+          type: integer
+        stormctrl_bcast_enabled:
+          type: boolean
+        stormctrl_bcast_rate:
+          type: integer
+        stormctrl_mcast_enabled:
+          type: boolean
+        stormctrl_mcast_rate:
+          type: integer
+        stormctrl_ucast_enabled:
+          type: boolean
+        stormctrl_ucast_rate:
+          type: integer
+        stp_port_mode:
+          type: boolean
+        port_security_enabled:
+          type: boolean
+        port_security_mac_address:
+          type: array
+          items:
+            type: string
+        isolation:
+          type: boolean
+        lldpmed_enabled:
+          type: boolean
+        egress_rate_limit_kbps_enabled:
+          type: boolean
+        egress_rate_limit_kbps:
+          type: integer
+        setting_preference:
+          type: string
+          enum: [auto, manual]
+        site_id:
+          type: string
+
+    PortProfileCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        forward:
+          type: string
+          default: native
+        native_networkconf_id:
+          type: string
+        poe_mode:
+          type: string
+        autoneg:
+          type: boolean
+
+    UserGroup:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        qos_rate_max_up:
+          type: integer
+          description: Upload rate limit in Kbps (-1 for unlimited)
+        qos_rate_max_down:
+          type: integer
+          description: Download rate limit in Kbps (-1 for unlimited)
+        attr_no_delete:
+          type: boolean
+        attr_hidden_id:
+          type: string
+        site_id:
+          type: string
+
+    UserGroupCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        qos_rate_max_up:
+          type: integer
+          default: -1
+        qos_rate_max_down:
+          type: integer
+          default: -1
+
+    RadiusProfile:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        use_usg_auth_server:
+          type: boolean
+        auth_servers:
+          type: array
+          items:
+            type: object
+            properties:
+              ip:
+                type: string
+              port:
+                type: integer
+              x_secret:
+                type: string
+        acct_servers:
+          type: array
+          items:
+            type: object
+            properties:
+              ip:
+                type: string
+              port:
+                type: integer
+              x_secret:
+                type: string
+        interim_update_interval:
+          type: integer
+        attr_no_delete:
+          type: boolean
+        attr_no_edit:
+          type: boolean
+        site_id:
+          type: string
+
+    RadiusProfileCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        use_usg_auth_server:
+          type: boolean
+        auth_servers:
+          type: array
+          items:
+            type: object
+            properties:
+              ip:
+                type: string
+              port:
+                type: integer
+              x_secret:
+                type: string
+
+    DynamicDns:
+      type: object
+      properties:
+        _id:
+          type: string
+        interface:
+          type: string
+          enum: [wan, wan2]
+        service:
+          type: string
+          enum: [cloudflare, dyndns, noip, namecheap, freedns, afraid, duckdns, google, custom]
+        host_name:
+          type: string
+        login:
+          type: string
+        x_password:
+          type: string
+        server:
+          type: string
+          description: Custom DDNS server URL
+        site_id:
+          type: string
+
+    DynamicDnsCreate:
+      type: object
+      required: [service, host_name, login, x_password]
+      properties:
+        interface:
+          type: string
+          default: wan
+        service:
+          type: string
+        host_name:
+          type: string
+        login:
+          type: string
+        x_password:
+          type: string
+        server:
+          type: string
+
+    # ============================================
+    # Client and Device Schemas
+    # ============================================
+
+    Client:
+      type: object
+      properties:
+        id:
+          type: string
+        mac:
+          type: string
+        display_name:
+          type: string
+        status:
+          type: string
+          enum: [online, offline]
+        type:
+          type: string
+          enum: [WIRED, WIRELESS]
+        is_wired:
+          type: boolean
+        is_guest:
+          type: boolean
+        blocked:
+          type: boolean
+        network_id:
+          type: string
+        network_name:
+          type: string
+        last_ip:
+          type: string
+        vlan:
+          type: integer
+        oui:
+          type: string
+          description: Manufacturer name from MAC OUI lookup
+        uptime:
+          type: integer
+        first_seen:
+          type: integer
+        last_seen:
+          type: integer
+        rx_bytes:
+          type: integer
+        tx_bytes:
+          type: integer
+        rx_packets:
+          type: integer
+        tx_packets:
+          type: integer
+        wired_rate_mbps:
+          type: integer
+        wifi_experience_score:
+          type: number
+        satisfaction:
+          type: number
+        user_id:
+          type: string
+        usergroup_id:
+          type: string
+        use_fixedip:
+          type: boolean
+        fixed_ip:
+          type: string
+        local_dns_record:
+          type: string
+        local_dns_record_enabled:
+          type: boolean
+        noted:
+          type: boolean
+        note:
+          type: string
+        fingerprint:
+          type: object
+          properties:
+            has_override:
+              type: boolean
+            computed_dev_id:
+              type: integer
+            computed_engine:
+              type: integer
+        last_uplink_mac:
+          type: string
+        last_uplink_name:
+          type: string
+        last_uplink_remote_port:
+          type: integer
+        sw_port:
+          type: integer
+        site_id:
+          type: string
+
+    DeviceList:
+      type: object
+      properties:
+        network_devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/NetworkDevice'
+        access_devices:
+          type: array
+          items:
+            type: object
+        protect_devices:
+          type: array
+          items:
+            type: object
+
+    NetworkDevice:
+      type: object
+      properties:
+        _id:
+          type: string
+        mac:
+          type: string
+        ip:
+          type: string
+        name:
+          type: string
+        model:
+          type: string
+        type:
+          type: string
+          enum: [uap, usw, ugw, uxg, udm]
+        adopted:
+          type: boolean
+        state:
+          type: integer
+          description: 0=offline, 1=connected, 2=pending, etc.
+        version:
+          type: string
+        displayable_version:
+          type: string
+        upgradable:
+          type: boolean
+        uptime:
+          type: integer
+        last_seen:
+          type: integer
+        is_access_point:
+          type: boolean
+        product_line:
+          type: string
+        num_sta:
+          type: integer
+          description: Number of connected clients
+        satisfaction:
+          type: number
+        connection_network_id:
+          type: string
+        connection_network_name:
+          type: string
+        system-stats:
+          type: object
+          properties:
+            cpu:
+              type: number
+            mem:
+              type: number
+            uptime:
+              type: integer
+        port_table:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortTableEntry'
+        radio_table:
+          type: array
+          items:
+            $ref: '#/components/schemas/RadioTableEntry'
+        vap_table:
+          type: array
+          items:
+            $ref: '#/components/schemas/VapTableEntry'
+        uplink:
+          type: object
+          properties:
+            type:
+              type: string
+            speed:
+              type: integer
+            uplink_mac:
+              type: string
+            uplink_device_name:
+              type: string
+            uplink_remote_port:
+              type: integer
+
+    PortTableEntry:
+      type: object
+      properties:
+        port_idx:
+          type: integer
+        name:
+          type: string
+        media:
+          type: string
+        speed:
+          type: integer
+        full_duplex:
+          type: boolean
+        up:
+          type: boolean
+        enable:
+          type: boolean
+        poe_enable:
+          type: boolean
+        poe_caps:
+          type: integer
+        rx_bytes:
+          type: integer
+        tx_bytes:
+          type: integer
+        satisfaction:
+          type: integer
+        is_uplink:
+          type: boolean
+        portconf_id:
+          type: string
+        op_mode:
+          type: string
+          enum: [switch, mirror, aggregate]
+
+    RadioTableEntry:
+      type: object
+      properties:
+        name:
+          type: string
+        radio:
+          type: string
+          enum: [ng, na, 6e]
+        channel:
+          type: integer
+        ht:
+          type: integer
+          description: Channel width (20, 40, 80, 160)
+        tx_power_mode:
+          type: string
+        max_txpower:
+          type: integer
+        min_txpower:
+          type: integer
+        is_11ac:
+          type: boolean
+        is_11ax:
+          type: boolean
+        is_11be:
+          type: boolean
+        has_dfs:
+          type: boolean
+        has_ht160:
+          type: boolean
+
+    VapTableEntry:
+      type: object
+      properties:
+        essid:
+          type: string
+        bssid:
+          type: string
+        radio:
+          type: string
+        radio_name:
+          type: string
+        channel:
+          type: integer
+        bw:
+          type: integer
+        is_guest:
+          type: boolean
+        num_sta:
+          type: integer
+        rx_bytes:
+          type: integer
+        tx_bytes:
+          type: integer
+        satisfaction:
+          type: integer
+
+    VpnConnection:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [site-to-site, remote-user]
+        status:
+          type: string
+          enum: [connected, disconnected]
+        local_ip:
+          type: string
+        remote_ip:
+          type: string
+        bytes_in:
+          type: integer
+        bytes_out:
+          type: integer
+
+    WanSla:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        enabled:
+          type: boolean
+        interface:
+          type: string
+        target:
+          type: string
+        threshold_latency:
+          type: integer
+        threshold_packet_loss:
+          type: number
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: unifises
+
+security:
+  - cookieAuth: []

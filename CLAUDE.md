@@ -11,6 +11,9 @@ Go SDK for UniFi APIs (Site Manager and Network).
   - `network_models.go` - Controller API models
   - `errors.go` - Sentinel errors
   - `logger.go` - Logger interface and StdLogger
+- `openapi/` - OpenAPI specifications (source of truth for API contracts)
+  - `unifi-sitemanager-api.yaml` - Site Manager cloud API spec
+  - `unifi-network-api.yaml` - Network controller API spec (v2 + legacy REST)
 - `cmd/example/` - Test harness (requires `UNIFI_API_KEY` env var)
 - `cmd/validate/` - API drift detection tool (requires `UNIFI_API_KEY` env var)
 
@@ -62,15 +65,21 @@ This SDK is intended to support a Terraform provider. Prioritize type safety wit
 
 ## Architecture Decisions
 
+- **OpenAPI-driven development**: The `openapi/` directory contains authoritative API specifications. When adding new endpoints or models, consult these specs first. They were derived from live API responses via Playwright browser automation.
 - **Reactive rate limiting over proactive**: Terraform's sequential execution model rarely hits limits. Reactive retry with exponential backoff + jitter adapts automatically.
-- **Hand-written types**: No official OpenAPI specs cover our use cases. Models derived from API docs and observed responses.
 - **Interface-first**: `SiteManager` and `NetworkManager` interfaces enable mocking without test dependencies on real API.
 - **Session-based auth for Network API**: The official Integration API is read-only. Legacy REST API with cookie auth supports writes.
 
 ## Preferences
 
+- **OpenAPI-first development**: When implementing new API endpoints:
+  1. Read the relevant OpenAPI spec (`openapi/*.yaml`) to understand the endpoint contract
+  2. Use schema definitions to generate Go struct fields with correct types and JSON tags
+  3. For Policy Engine v2 endpoints, reference `unifi-network-api.yaml` schemas like `FirewallPolicy`, `FirewallZone`, `PolicyEndpoint`
+  4. For legacy REST endpoints, reference schemas like `Network`, `FirewallGroup`, `Wlan`, `PortForward`
+  5. To discover new/undocumented endpoints, use Playwright to capture API responses from the UniFi UI
 - **Context7 MCP**: When generating code that uses external libraries, or when needing up-to-date API documentation, configuration examples, or setup steps for any library/framework, automatically use Context7 MCP tools (`resolve-library-id` then `get-library-docs`) to fetch current documentation. Do not rely solely on training data for library APIs.
-- **Playwright MCP**: Use Playwright MCP tools for browser automation tasks: testing web UIs, scraping dynamic content, filling forms, taking screenshots, or interacting with web applications. Prefer `browser_snapshot` over screenshots for actionable page state. Use `browser_fill_form` for multiple fields, `browser_click`/`browser_type` for interactions, and `browser_evaluate` for custom JavaScript. Always call `browser_close` when finished.
+- **Playwright MCP**: Use Playwright MCP tools for browser automation tasks: testing web UIs, scraping dynamic content, filling forms, taking screenshots, or interacting with web applications. Prefer `browser_snapshot` over screenshots for actionable page state. Use `browser_fill_form` for multiple fields, `browser_click`/`browser_type` for interactions, and `browser_evaluate` for custom JavaScript. Always call `browser_close` when finished. Use `browser_evaluate` with `fetch()` to capture API responses from authenticated sessions.
 - **Commits**: Do not include Claude Code citations or co-author tags
 - **Code style**: Minimal comments, no inline comments unless truly necessary
 - **Go idioms**: Prefer exported fields over setter methods for simplicity. Skip helper functions (like `IsNotFound()`) - use standard `errors.Is()` patterns instead

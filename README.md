@@ -332,13 +332,40 @@ Log output format:
 | Site Manager | Complete | All v1 read-only endpoints (hosts, sites, devices) |
 | Network | Complete | Session auth, networks, firewall rules/groups, port forwards, WLANs, port profiles, routes, user groups, RADIUS, DDNS |
 
-## Model Provenance
+## OpenAPI Specifications
 
-Models in this SDK are hand-written based on:
-- **Site Manager API**: [Ubiquiti developer documentation](https://developer.ui.com/site-manager-api/gettingstarted) and observed API responses
-- **Network API**: Observed responses from the UniFi Network Application REST API (`/proxy/network/api/s/{site}/rest/*`)
+This repository includes comprehensive OpenAPI 3.0 specifications in the `openapi/` directory:
 
-No official OpenAPI specification exists for the Site Manager API. The Network API has an OpenAPI spec at `/proxy/network/api-docs/integration.json`, but we use the legacy REST API for write operations which is not covered by that spec.
+| Spec | Description |
+|------|-------------|
+| `unifi-sitemanager-api.yaml` | Site Manager cloud API - hosts, sites, devices |
+| `unifi-network-api.yaml` | Network controller API - Policy Engine v2 + legacy REST |
+
+### Network API Coverage
+
+The Network API spec documents two API versions:
+
+**v2 API** (Policy Engine - zone-based firewall):
+- Firewall policies, zones, traffic rules, traffic routes
+- NAT rules, static DNS, ACL rules, QoS rules
+- Active clients, devices, VPN connections
+
+**Legacy REST API** (full CRUD):
+- Networks, firewall groups, WLANs, port forwards
+- Static routes, port profiles, user groups
+- RADIUS profiles, dynamic DNS
+
+### Using the Specs
+
+The OpenAPI specs serve as the source of truth for API contracts. When implementing new endpoints:
+
+1. Consult the relevant spec for endpoint paths and schemas
+2. Use schema definitions to derive Go struct fields
+3. For undocumented endpoints, use browser automation to capture live API responses
+
+### Spec Provenance
+
+These specifications were derived from live API responses captured via Playwright browser automation against a UniFi Dream Machine SE running Network 9.5.21. They document endpoints not covered by Ubiquiti's official Integration API spec.
 
 ## License
 

@@ -1,0 +1,908 @@
+openapi: 3.0.3
+info:
+  title: UniFi Site Manager API
+  description: |
+    UniFi Site Manager cloud API for managing multiple UniFi consoles and sites.
+
+    This is a read-only API that provides access to:
+    - Hosts (UniFi consoles like UDM, Cloud Key, etc.)
+    - Sites (Network sites configured on each host)
+    - Devices (UniFi devices: APs, switches, gateways)
+
+    **Rate Limits:**
+    - v1 endpoints: 10,000 requests/minute
+    - EA (Early Access) endpoints: 100 requests/minute
+
+    **Authentication:**
+    - API Key via `X-API-KEY` header
+    - Generate keys at https://unifi.ui.com → Account Settings → API Keys
+  version: "1.0"
+  contact:
+    name: Ubiquiti Developer
+    url: https://developer.ui.com/site-manager-api/gettingstarted
+servers:
+  - url: https://api.ui.com
+    description: UniFi Cloud API
+
+tags:
+  - name: Hosts
+    description: UniFi consoles and controllers
+  - name: Sites
+    description: Network sites
+  - name: Devices
+    description: UniFi network devices
+
+paths:
+  /v1/hosts:
+    get:
+      tags: [Hosts]
+      summary: List all hosts
+      description: |
+        Returns a paginated list of all UniFi hosts (consoles) accessible to the authenticated user.
+
+        A host is a UniFi console like UDM, UDM Pro, Cloud Key, or Network Server.
+      operationId: listHosts
+      parameters:
+        - $ref: '#/components/parameters/pageSize'
+        - $ref: '#/components/parameters/nextToken'
+      responses:
+        '200':
+          description: List of hosts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListHostsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/hosts/{hostId}:
+    get:
+      tags: [Hosts]
+      summary: Get a specific host
+      description: Returns detailed information about a single UniFi host.
+      operationId: getHost
+      parameters:
+        - name: hostId
+          in: path
+          required: true
+          description: Host ID (usually the hardware ID or MAC-based identifier)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Host details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetHostResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/sites:
+    get:
+      tags: [Sites]
+      summary: List all sites
+      description: |
+        Returns a paginated list of all UniFi Network sites accessible to the authenticated user.
+
+        Sites are logical groupings within a UniFi Network controller.
+      operationId: listSites
+      parameters:
+        - $ref: '#/components/parameters/pageSize'
+        - $ref: '#/components/parameters/nextToken'
+      responses:
+        '200':
+          description: List of sites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSitesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/devices:
+    get:
+      tags: [Devices]
+      summary: List all devices
+      description: |
+        Returns a paginated list of all UniFi devices across all accessible hosts.
+
+        Results are grouped by host. Use the `hostIds` filter to limit to specific hosts.
+      operationId: listDevices
+      parameters:
+        - $ref: '#/components/parameters/pageSize'
+        - $ref: '#/components/parameters/nextToken'
+        - name: hostIds
+          in: query
+          description: Filter by specific host IDs (can be repeated)
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+      responses:
+        '200':
+          description: List of devices grouped by host
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListDevicesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+components:
+  parameters:
+    pageSize:
+      name: pageSize
+      in: query
+      description: Number of items per page (default varies by endpoint)
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+    nextToken:
+      name: nextToken
+      in: query
+      description: Pagination token from previous response
+      schema:
+        type: string
+
+  responses:
+    Unauthorized:
+      description: Invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        traceId:
+          type: string
+
+    # ============================================
+    # Response Wrappers
+    # ============================================
+
+    ListHostsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Host'
+        httpStatusCode:
+          type: integer
+          example: 200
+        traceId:
+          type: string
+        nextToken:
+          type: string
+          nullable: true
+          description: Token for next page, null if no more pages
+
+    GetHostResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Host'
+        httpStatusCode:
+          type: integer
+        traceId:
+          type: string
+
+    ListSitesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Site'
+        httpStatusCode:
+          type: integer
+        traceId:
+          type: string
+        nextToken:
+          type: string
+          nullable: true
+
+    ListDevicesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/HostDevices'
+        httpStatusCode:
+          type: integer
+        traceId:
+          type: string
+        nextToken:
+          type: string
+          nullable: true
+
+    # ============================================
+    # Host Schemas
+    # ============================================
+
+    Host:
+      type: object
+      description: A UniFi console or controller (UDM, Cloud Key, Network Server)
+      properties:
+        id:
+          type: string
+          description: Unique host identifier
+        hardwareId:
+          type: string
+          description: Hardware-specific identifier
+        type:
+          type: string
+          description: Host type (e.g., "console")
+        ipAddress:
+          type: string
+          description: Public IP address
+        owner:
+          type: boolean
+          description: Whether current user is the owner
+        isBlocked:
+          type: boolean
+        registrationTime:
+          type: string
+          format: date-time
+        lastConnectionStateChange:
+          type: string
+          format: date-time
+        latestBackupTime:
+          type: string
+          format: date-time
+        userData:
+          $ref: '#/components/schemas/UserData'
+        reportedState:
+          $ref: '#/components/schemas/ReportedState'
+
+    UserData:
+      type: object
+      description: Information about the user's access to this host
+      properties:
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [owner, admin, viewer, custom]
+        roleId:
+          type: string
+        status:
+          type: string
+        localId:
+          type: string
+        apps:
+          type: array
+          items:
+            type: string
+        controllers:
+          type: array
+          items:
+            type: string
+        consoleGroupMembers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsoleGroupMember'
+        features:
+          $ref: '#/components/schemas/UserFeatures'
+        permissions:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    ConsoleGroupMember:
+      type: object
+      properties:
+        mac:
+          type: string
+        role:
+          type: string
+        roleAttributes:
+          $ref: '#/components/schemas/RoleAttributes'
+        sysId:
+          type: integer
+
+    RoleAttributes:
+      type: object
+      properties:
+        applications:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ApplicationRole'
+        candidateRoles:
+          type: array
+          items:
+            type: string
+        connectedState:
+          type: string
+        connectedStateLastChanged:
+          type: string
+
+    ApplicationRole:
+      type: object
+      properties:
+        owned:
+          type: boolean
+        required:
+          type: boolean
+        supported:
+          type: boolean
+
+    UserFeatures:
+      type: object
+      properties:
+        deviceGroups:
+          type: boolean
+        floorplan:
+          $ref: '#/components/schemas/FloorplanFeature'
+        manageApplications:
+          type: boolean
+        notifications:
+          type: boolean
+        pion:
+          type: boolean
+        webrtc:
+          $ref: '#/components/schemas/WebRTCFeature'
+
+    FloorplanFeature:
+      type: object
+      properties:
+        canEdit:
+          type: boolean
+        canView:
+          type: boolean
+
+    WebRTCFeature:
+      type: object
+      properties:
+        iceRestart:
+          type: boolean
+        mediaStreams:
+          type: boolean
+        twoWayAudio:
+          type: boolean
+
+    ReportedState:
+      type: object
+      description: Current state reported by the host
+      properties:
+        name:
+          type: string
+          description: User-assigned name
+        hostname:
+          type: string
+        version:
+          type: string
+          description: UniFi OS version
+        state:
+          type: string
+          enum: [connected, disconnected, unknown]
+        deviceState:
+          type: string
+        deviceStateLastChanged:
+          type: integer
+          format: int64
+          description: Unix timestamp
+        releaseChannel:
+          type: string
+          enum: [release, beta, internal]
+        timezone:
+          type: string
+        mac:
+          type: string
+        ip:
+          type: string
+        ipAddrs:
+          type: array
+          items:
+            type: string
+        hardware:
+          $ref: '#/components/schemas/Hardware'
+        location:
+          $ref: '#/components/schemas/Location'
+        wans:
+          type: array
+          items:
+            $ref: '#/components/schemas/WAN'
+        controllers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Controller'
+        apps:
+          type: array
+          items:
+            $ref: '#/components/schemas/App'
+        autoUpdate:
+          $ref: '#/components/schemas/AutoUpdate'
+        firmwareUpdate:
+          $ref: '#/components/schemas/FirmwareUpdate'
+        uidb:
+          $ref: '#/components/schemas/UIDB'
+        anonid:
+          type: string
+        controller_uuid:
+          type: string
+        country:
+          type: integer
+        deviceErrorCode:
+          type: string
+        directConnectDomain:
+          type: string
+        host_type:
+          type: integer
+        isStacked:
+          type: boolean
+        mgmt_port:
+          type: integer
+        availableChannels:
+          type: array
+          items:
+            type: string
+        consolesOnSameLocalNetwork:
+          type: array
+          items:
+            type: string
+        unadoptedUnifiOSDevices:
+          type: array
+          items:
+            type: string
+        features:
+          $ref: '#/components/schemas/Features'
+
+    Hardware:
+      type: object
+      properties:
+        mac:
+          type: string
+        name:
+          type: string
+          description: Product name (e.g., "UniFi Dream Machine SE")
+        shortname:
+          type: string
+          description: Short product code (e.g., "UDMPROSE")
+        firmwareVersion:
+          type: string
+        uuid:
+          type: string
+        serialno:
+          type: string
+
+    Location:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+        long:
+          type: number
+          format: double
+        radius:
+          type: number
+          format: double
+        text:
+          type: string
+          description: Human-readable address
+
+    WAN:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        interface:
+          type: string
+        ipv4:
+          type: string
+        ipv6:
+          type: string
+        mac:
+          type: string
+        plugged:
+          type: boolean
+        port:
+          type: integer
+        type:
+          type: string
+
+    Controller:
+      type: object
+      description: A controller application (Network, Protect, etc.)
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+        port:
+          type: integer
+        isInstalled:
+          type: boolean
+        isRunning:
+          type: boolean
+        isConfigured:
+          type: boolean
+        state:
+          type: string
+        status:
+          type: string
+        statusMessage:
+          type: string
+        releaseChannel:
+          type: string
+        installState:
+          type: string
+        updatable:
+          type: boolean
+        updateAvailable:
+          type: string
+
+    App:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        version:
+          type: string
+        port:
+          type: integer
+        isInstalled:
+          type: boolean
+        isRunning:
+          type: boolean
+        isConfigured:
+          type: boolean
+        controllerStatus:
+          type: string
+
+    AutoUpdate:
+      type: object
+      properties:
+        includeApplications:
+          type: boolean
+        schedule:
+          $ref: '#/components/schemas/UpdateSchedule'
+
+    UpdateSchedule:
+      type: object
+      properties:
+        day:
+          type: integer
+          minimum: 0
+          maximum: 6
+        frequency:
+          type: string
+          enum: [daily, weekly, never]
+        hour:
+          type: integer
+          minimum: 0
+          maximum: 23
+
+    FirmwareUpdate:
+      type: object
+      properties:
+        latestAvailableVersion:
+          type: string
+
+    UIDB:
+      type: object
+      description: UI database info for device icons
+      properties:
+        guid:
+          type: string
+          nullable: true
+        iconId:
+          type: string
+        id:
+          type: string
+        images:
+          type: object
+          additionalProperties:
+            type: string
+
+    Features:
+      type: object
+      description: Capabilities available on this host
+      properties:
+        alarmManager:
+          type: boolean
+        apiIntegration:
+          type: boolean
+        captiveProxy:
+          type: boolean
+        cloudBackup:
+          type: boolean
+        customSmtpServer:
+          type: boolean
+        directRemoteConnection:
+          type: boolean
+        hasBezel:
+          type: boolean
+        hasGateway:
+          type: boolean
+        hasLCM:
+          type: boolean
+        hasLED:
+          type: boolean
+        isAutomaticFailoverAvailable:
+          type: boolean
+        mfa:
+          type: boolean
+        mspBridgeModesSupported:
+          type: boolean
+        multiplePoolsSupport:
+          type: boolean
+        netInAppBackupSupport:
+          type: boolean
+        notifications:
+          type: boolean
+        sharedTokens:
+          type: boolean
+        snmpConfig:
+          type: boolean
+        supportForm:
+          type: boolean
+        syslog:
+          type: boolean
+        teleport:
+          type: boolean
+        teleportState:
+          type: string
+        uidService:
+          type: boolean
+        upsPairing:
+          type: boolean
+
+    # ============================================
+    # Site Schemas
+    # ============================================
+
+    Site:
+      type: object
+      description: A UniFi Network site
+      properties:
+        siteId:
+          type: string
+        hostId:
+          type: string
+          description: ID of the host this site belongs to
+        meta:
+          $ref: '#/components/schemas/SiteMeta'
+        statistics:
+          $ref: '#/components/schemas/SiteStatistics'
+        permission:
+          type: string
+          description: User's permission level for this site
+        isOwner:
+          type: boolean
+
+    SiteMeta:
+      type: object
+      properties:
+        name:
+          type: string
+        desc:
+          type: string
+        timezone:
+          type: string
+        gatewayMac:
+          type: string
+
+    SiteStatistics:
+      type: object
+      properties:
+        counts:
+          $ref: '#/components/schemas/SiteCounts'
+        gateway:
+          $ref: '#/components/schemas/SiteGateway'
+        ispInfo:
+          $ref: '#/components/schemas/SiteISPInfo'
+        percentages:
+          $ref: '#/components/schemas/SitePercentages'
+        internetIssues:
+          type: array
+          items:
+            type: object
+
+    SiteCounts:
+      type: object
+      properties:
+        criticalNotification:
+          type: integer
+        gatewayDevice:
+          type: integer
+        guestClient:
+          type: integer
+        lanConfiguration:
+          type: integer
+        offlineDevice:
+          type: integer
+        offlineGatewayDevice:
+          type: integer
+        offlineWifiDevice:
+          type: integer
+        offlineWiredDevice:
+          type: integer
+        pendingUpdateDevice:
+          type: integer
+        totalDevice:
+          type: integer
+        wanConfiguration:
+          type: integer
+        wifiClient:
+          type: integer
+        wifiConfiguration:
+          type: integer
+        wifiDevice:
+          type: integer
+        wiredClient:
+          type: integer
+        wiredDevice:
+          type: integer
+
+    SiteGateway:
+      type: object
+      properties:
+        hardwareId:
+          type: string
+        inspectionState:
+          type: string
+        ipsMode:
+          type: string
+        ipsSignature:
+          $ref: '#/components/schemas/IPSSignature'
+        shortname:
+          type: string
+
+    IPSSignature:
+      type: object
+      properties:
+        rulesCount:
+          type: integer
+        type:
+          type: string
+
+    SiteISPInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        organization:
+          type: string
+
+    SitePercentages:
+      type: object
+      properties:
+        wanUptime:
+          type: number
+          format: double
+
+    # ============================================
+    # Device Schemas
+    # ============================================
+
+    HostDevices:
+      type: object
+      description: Devices grouped by their host
+      properties:
+        hostId:
+          type: string
+        hostName:
+          type: string
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+        updatedAt:
+          type: string
+          format: date-time
+
+    Device:
+      type: object
+      description: A UniFi network device (AP, switch, gateway, etc.)
+      properties:
+        id:
+          type: string
+        mac:
+          type: string
+        name:
+          type: string
+        model:
+          type: string
+          description: Model code (e.g., "UAP6MP")
+        shortname:
+          type: string
+          description: Marketing name (e.g., "U6 Pro")
+        ip:
+          type: string
+        productLine:
+          type: string
+          enum: [network, protect, access, connect, talk, uid, drive]
+        status:
+          type: string
+          enum: [online, offline, pending, updating, provisioning]
+        version:
+          type: string
+          description: Firmware version
+        firmwareStatus:
+          type: string
+          enum: [upToDate, upgradePending, upgrading]
+        updateAvailable:
+          type: string
+          nullable: true
+          description: Available firmware version, if any
+        isConsole:
+          type: boolean
+          description: Whether this device is a UniFi console
+        isManaged:
+          type: boolean
+        startupTime:
+          type: string
+          format: date-time
+          nullable: true
+        adoptionTime:
+          type: string
+          format: date-time
+          nullable: true
+        note:
+          type: string
+          nullable: true
+        uidb:
+          $ref: '#/components/schemas/UIDB'
+
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+      description: |
+        API key for authentication.
+
+        Generate at: UniFi Site Manager → Account Settings → API Keys
+
+security:
+  - apiKey: []
