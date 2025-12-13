@@ -442,6 +442,50 @@ func TestListAllHostsPagination(t *testing.T) {
 	}
 }
 
+func TestListAllHostsMidPaginationError(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+
+		if callCount == 1 {
+			resp := map[string]any{
+				"data": []map[string]any{
+					{"id": "host-1"},
+				},
+				"httpStatusCode": 200,
+				"traceId":        "trace-1",
+				"nextToken":      "page-2-token",
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(resp)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("internal server error"))
+		}
+	}))
+	defer server.Close()
+
+	client := newTestSiteManagerClient(t, "test-key")
+	client.BaseURL = server.URL
+
+	hosts, err := client.ListAllHosts(context.Background())
+	if err == nil {
+		t.Fatal("expected error on second page, got nil")
+	}
+
+	if !errors.Is(err, ErrServerError) {
+		t.Errorf("expected ErrServerError, got %v", err)
+	}
+
+	if hosts != nil {
+		t.Errorf("expected nil hosts on error, got %v", hosts)
+	}
+
+	if callCount != 2 {
+		t.Errorf("expected 2 API calls (first page success, second page error), got %d", callCount)
+	}
+}
+
 func TestListAllSitesPagination(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

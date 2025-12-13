@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestNewNetworkClient(t *testing.T) {
@@ -155,6 +156,83 @@ func TestNetworkClientLoginFailure(t *testing.T) {
 		return // Expected
 	}
 	t.Error("client should not be logged in after failed login")
+}
+
+func TestNetworkClientLoginFailureScenarios(t *testing.T) {
+	tests := []struct {
+		name           string
+		statusCode     int
+		responseBody   string
+		expectedErr    error
+		checkSentinel  bool
+	}{
+		{
+			name:          "forbidden",
+			statusCode:    403,
+			responseBody:  `{"error": "forbidden"}`,
+			expectedErr:   ErrForbidden,
+			checkSentinel: true,
+		},
+		{
+			name:          "internal server error",
+			statusCode:    500,
+			responseBody:  `{"error": "internal server error"}`,
+			expectedErr:   ErrServerError,
+			checkSentinel: true,
+		},
+		{
+			name:          "bad gateway",
+			statusCode:    502,
+			responseBody:  `{"error": "bad gateway"}`,
+			expectedErr:   ErrBadGateway,
+			checkSentinel: true,
+		},
+		{
+			name:          "service unavailable",
+			statusCode:    503,
+			responseBody:  `{"error": "service unavailable"}`,
+			expectedErr:   ErrServiceUnavail,
+			checkSentinel: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.responseBody))
+			}))
+			defer server.Close()
+
+			client, _ := NewNetworkClient(NetworkClientConfig{
+				BaseURL:  server.URL,
+				Username: "admin",
+				Password: "password",
+			})
+
+			err := client.Login(context.Background())
+			if err == nil {
+				t.Fatal("Login() should have failed")
+			}
+
+			var apiErr *APIError
+			if !errors.As(err, &apiErr) {
+				t.Fatalf("error should be APIError, got %T: %v", err, err)
+			}
+
+			if apiErr.StatusCode != tt.statusCode {
+				t.Errorf("expected status code %d, got %d", tt.statusCode, apiErr.StatusCode)
+			}
+
+			if tt.checkSentinel && !errors.Is(err, tt.expectedErr) {
+				t.Errorf("expected %v, got %v", tt.expectedErr, err)
+			}
+
+			if client.IsLoggedIn() {
+				t.Error("client should not be logged in after failed login")
+			}
+		})
+	}
 }
 
 func TestNetworkClientNotLoggedIn(t *testing.T) {
@@ -2447,5 +2525,45 @@ func TestNetworkClientRetryExhausted(t *testing.T) {
 
 	if callCount != 3 {
 		t.Errorf("expected 3 API calls (1 + 2 retries), got %d", callCount)
+	}
+}
+
+func TestNetworkClientContextCancellationDuringRetry(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		default:
+			callCount++
+			w.WriteHeader(http.StatusBadGateway)
+			w.Write([]byte("gateway error"))
+		}
+	}))
+	defer server.Close()
+
+	client, _ := NewNetworkClient(NetworkClientConfig{
+		BaseURL:      server.URL,
+		Username:     "admin",
+		Password:     "password",
+		MaxRetries:   intPtr(5),
+		MaxRetryWait: 60 * time.Second,
+	})
+	client.Login(context.Background())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	_, err := client.ListNetworks(ctx)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("expected context.DeadlineExceeded, got %v", err)
+	}
+
+	if callCount != 1 {
+		t.Errorf("expected 1 API call before context timeout, got %d", callCount)
 	}
 }
