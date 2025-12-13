@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+func intPtr(i int) *int { return &i }
+
 func newTestSiteManagerClient(t *testing.T, apiKey string) *SiteManagerClient {
 	t.Helper()
 	client, err := NewSiteManagerClient(SiteManagerClientConfig{APIKey: apiKey})
@@ -58,7 +60,7 @@ func TestNewSiteManagerClientCustomConfig(t *testing.T) {
 		APIKey:       "test-key",
 		BaseURL:      "https://custom.api.com",
 		Timeout:      60 * time.Second,
-		MaxRetries:   5,
+		MaxRetries:   intPtr(5),
 		MaxRetryWait: 120 * time.Second,
 	})
 	if err != nil {
@@ -338,7 +340,7 @@ func TestErrorHandling(t *testing.T) {
 			client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
 				APIKey:     "test-key",
 				BaseURL:    server.URL,
-				MaxRetries: 1,
+				MaxRetries: intPtr(1),
 			})
 
 			_, err := client.ListHosts(context.Background(), nil)
@@ -633,7 +635,7 @@ func TestRateLimitExhausted(t *testing.T) {
 	client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
 		APIKey:     "test-key",
 		BaseURL:    server.URL,
-		MaxRetries: 2,
+		MaxRetries: intPtr(2),
 	})
 
 	_, err := client.ListHosts(context.Background(), nil)
@@ -704,7 +706,7 @@ func TestTransientErrorRetry(t *testing.T) {
 			client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
 				APIKey:     "test-key",
 				BaseURL:    server.URL,
-				MaxRetries: 2,
+				MaxRetries: intPtr(2),
 			})
 
 			resp, err := client.ListHosts(context.Background(), nil)
@@ -734,7 +736,7 @@ func TestNonRetryableError(t *testing.T) {
 	client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
 		APIKey:     "test-key",
 		BaseURL:    server.URL,
-		MaxRetries: 3,
+		MaxRetries: intPtr(3),
 	})
 
 	_, err := client.ListHosts(context.Background(), nil)
@@ -748,6 +750,35 @@ func TestNonRetryableError(t *testing.T) {
 
 	if !errors.Is(err, ErrBadRequest) {
 		t.Errorf("expected ErrBadRequest, got %v", err)
+	}
+}
+
+func TestMaxRetriesZeroDisablesRetry(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.WriteHeader(502)
+		w.Write([]byte("bad gateway"))
+	}))
+	defer server.Close()
+
+	client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
+		APIKey:     "test-key",
+		BaseURL:    server.URL,
+		MaxRetries: intPtr(0),
+	})
+
+	_, err := client.ListHosts(context.Background(), nil)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if callCount != 1 {
+		t.Errorf("expected 1 API call (MaxRetries=0 means no retries), got %d", callCount)
+	}
+
+	if !errors.Is(err, ErrBadGateway) {
+		t.Errorf("expected ErrBadGateway, got %v", err)
 	}
 }
 
@@ -966,7 +997,7 @@ func TestRetryAfterHeaderInAPIError(t *testing.T) {
 	client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
 		APIKey:     "test-key",
 		BaseURL:    server.URL,
-		MaxRetries: 1,
+		MaxRetries: intPtr(1),
 	})
 
 	_, err := client.ListHosts(context.Background(), nil)
