@@ -491,6 +491,23 @@ components:
             type: string
         features:
           $ref: '#/components/schemas/Features'
+        # Network Server specific fields (software controller on VM/NAS)
+        deviceId:
+          type: string
+          description: Network Server specific - device identifier
+        firmware_version:
+          type: string
+          nullable: true
+          description: Network Server specific - firmware version
+        hardware_id:
+          type: string
+          description: Network Server specific - hardware identifier
+        inform_port:
+          type: integer
+          description: Network Server specific - inform port
+        override_inform_host:
+          type: boolean
+          description: Network Server specific - whether inform host is overridden
 
     Hardware:
       type: object
