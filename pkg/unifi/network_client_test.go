@@ -1844,7 +1844,9 @@ func TestNetworkClientGetFirewallRule(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -1880,7 +1882,9 @@ func TestNetworkClientCreateFirewallRule(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -1915,7 +1919,9 @@ func TestNetworkClientDeleteFirewallRule(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -1947,7 +1953,9 @@ func TestNetworkClientGetFirewallGroup(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -1983,7 +1991,9 @@ func TestNetworkClientCreateFirewallGroup(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2020,7 +2030,9 @@ func TestNetworkClientUpdateFirewallGroup(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2055,7 +2067,9 @@ func TestNetworkClientDeleteFirewallGroup(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2087,7 +2101,9 @@ func TestNetworkClientGetPortForward(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2123,7 +2139,9 @@ func TestNetworkClientCreatePortForward(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2160,7 +2178,9 @@ func TestNetworkClientUpdatePortForward(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2195,7 +2215,9 @@ func TestNetworkClientDeletePortForward(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2227,7 +2249,9 @@ func TestNetworkClientGetWLAN(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2263,7 +2287,9 @@ func TestNetworkClientCreateWLAN(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2300,7 +2326,9 @@ func TestNetworkClientUpdateWLAN(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2335,7 +2363,9 @@ func TestNetworkClientDeleteWLAN(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2360,7 +2390,9 @@ func TestNetworkClientAPIErrorResponse(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2398,7 +2430,9 @@ func TestNetworkClientLogoutNetworkError(t *testing.T) {
 	}))
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 	server.Close()
@@ -2740,7 +2774,9 @@ func TestNetworkClientFirewallZones(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2850,7 +2886,9 @@ func TestNetworkClientStaticDNS(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -2943,7 +2981,9 @@ func TestNetworkClientListActiveClients(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -3005,7 +3045,9 @@ func TestNetworkClientListNetworkDevices(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -3037,7 +3079,9 @@ func TestNetworkClientV2APIError(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -3130,7 +3174,9 @@ func TestNetworkClientTrafficRules(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -3221,7 +3267,9 @@ func TestNetworkClientTrafficRoutes(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -3312,7 +3360,9 @@ func TestNetworkClientNatRules(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
@@ -3399,7 +3449,9 @@ func TestNetworkClientReadOnlyV2APIs(t *testing.T) {
 	defer server.Close()
 
 	client, _ := NewNetworkClient(NetworkClientConfig{
-		BaseURL: server.URL, Username: "admin", Password: "password",
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
 	})
 	client.Login(context.Background())
 
