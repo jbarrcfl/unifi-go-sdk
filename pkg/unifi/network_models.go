@@ -659,7 +659,7 @@ type TrafficRule struct {
 	Description      string              `json:"description,omitempty"`
 	AppCategoryIDs   []string            `json:"app_category_ids,omitempty"`
 	AppIDs           []int               `json:"app_ids,omitempty"`
-	Domains          []string            `json:"domains,omitempty"`
+	Domains          []TrafficDomain     `json:"domains,omitempty"`
 	IPAddresses      []string            `json:"ip_addresses,omitempty"`
 	IPRanges         []string            `json:"ip_ranges,omitempty"`
 	Regions          []string            `json:"regions,omitempty"`
@@ -681,6 +681,13 @@ type TrafficBandwidth struct {
 	Enabled           *bool `json:"enabled,omitempty"`
 }
 
+// TrafficDomain represents a domain entry for traffic rules and routes.
+type TrafficDomain struct {
+	Domain      string `json:"domain"`
+	Description string `json:"description,omitempty"`
+	Ports       []int  `json:"ports,omitempty"`
+}
+
 // TrafficRoute represents a policy-based routing rule (v2 API).
 //
 // Field value reference:
@@ -694,7 +701,7 @@ type TrafficRoute struct {
 	MatchingTarget string              `json:"matching_target,omitempty"`
 	TargetDevices  []TrafficRuleTarget `json:"target_devices,omitempty"`
 	NetworkID      string              `json:"network_id,omitempty"`
-	Domains        []string            `json:"domains,omitempty"`
+	Domains        []TrafficDomain     `json:"domains,omitempty"`
 	IPAddresses    []string            `json:"ip_addresses,omitempty"`
 	IPRanges       []string            `json:"ip_ranges,omitempty"`
 	Regions        []string            `json:"regions,omitempty"`
@@ -705,23 +712,21 @@ type TrafficRoute struct {
 // NatRule represents a NAT rule (v2 API).
 //
 // Field value reference:
-//   - Type: "SOURCE", "DESTINATION", "MASQUERADE"
+//   - Type: "MASQUERADE", "DNAT", "SNAT"
 //   - Protocol: "all", "tcp", "udp", "tcp_udp"
 type NatRule struct {
-	ID               string            `json:"_id,omitempty"`
-	Name             string            `json:"name"`
-	Enabled          *bool             `json:"enabled,omitempty"`
-	Type             string            `json:"type,omitempty"`
-	Description      string            `json:"description,omitempty"`
-	Protocol         string            `json:"protocol,omitempty"`
-	WanInterface     string            `json:"wan_interface,omitempty"`
-	SourceAddress    string            `json:"source_address,omitempty"`
-	SourcePort       string            `json:"source_port,omitempty"`
-	DestAddress      string            `json:"dest_address,omitempty"`
-	DestPort         string            `json:"dest_port,omitempty"`
-	TranslatedIP     string            `json:"translated_ip,omitempty"`
-	TranslatedPort   string            `json:"translated_port,omitempty"`
-	Logging          *bool             `json:"logging,omitempty"`
+	ID             string `json:"_id,omitempty"`
+	Enabled        *bool  `json:"enabled,omitempty"`
+	Type           string `json:"type,omitempty"`
+	Description    string `json:"description,omitempty"`
+	Protocol       string `json:"protocol,omitempty"`
+	SourceAddress  string `json:"source_address,omitempty"`
+	SourcePort     string `json:"source_port,omitempty"`
+	DestAddress    string `json:"dest_address,omitempty"`
+	DestPort       string `json:"dest_port,omitempty"`
+	TranslatedIP   string `json:"translated_ip,omitempty"`
+	TranslatedPort string `json:"translated_port,omitempty"`
+	Logging        *bool  `json:"logging,omitempty"`
 }
 
 // AclRule represents an access control list rule (v2 API, read-only).
