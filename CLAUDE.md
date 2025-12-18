@@ -15,6 +15,7 @@ Go SDK for UniFi APIs (Site Manager and Network).
   - `logger.go` - Logger interface and StdLogger
   - `doc.go` - Package documentation for pkg.go.dev
   - `example_test.go` - Runnable examples for pkg.go.dev
+  - `integration_test.go` - Integration tests against real UniFi hardware (build tag: `integration`)
 - `openapi/` - OpenAPI specifications (source of truth for API contracts)
   - `unifi-sitemanager-api.yaml` - Site Manager cloud API spec
   - `unifi-network-api.yaml` - Network controller API spec (v2 + legacy REST)
@@ -52,6 +53,40 @@ Two distinct APIs, both implemented:
 go build ./...
 go test -v -race ./pkg/...
 ```
+
+## Integration Tests
+
+Integration tests run against a real UniFi OS Server or USG. They use the `integration` build tag and load credentials from `.env` file or environment variables:
+
+```bash
+# Option 1: Use .env file (project root)
+cat > .env << 'EOF'
+UNIFI_NETWORK_URL=https://192.168.1.1
+UNIFI_NETWORK_USER=admin
+UNIFI_NETWORK_PASS=your-password
+UNIFI_NETWORK_SITE=default
+EOF
+
+# Option 2: Export environment variables
+export UNIFI_NETWORK_URL=https://192.168.1.1
+export UNIFI_NETWORK_USER=admin
+export UNIFI_NETWORK_PASS=your-password
+
+# Run integration tests
+go test -tags integration -v ./pkg/unifi/...
+```
+
+Integration tests:
+- Create resources with `sdk_integration_test_` prefix
+- Clean up all test resources on completion (even on failure)
+- Skip automatically if environment variables are not set
+- Test full CRUD lifecycle for all resource types
+- Include concurrent operation tests
+
+**Coverage:**
+- Legacy REST: Networks, Firewall Rules/Groups, Port Forwards, User Groups, Routes, Port Confs, RADIUS Profiles
+- v2 API: Firewall Zones/Policies, Static DNS, Traffic Rules/Routes, NAT Rules
+- Read-only endpoints: Active Clients, Network Devices, ACL/QoS Rules, Content Filtering, VPN, WAN SLAs
 
 ## Run Example
 
