@@ -192,6 +192,7 @@ type NetworkClient struct {
 	maxRetryWait time.Duration
 	mu           sync.RWMutex
 	loggedIn     bool
+	csrfToken    string
 }
 
 // NetworkClientConfig contains configuration options for creating a NetworkClient.
@@ -264,7 +265,8 @@ func NewNetworkClient(cfg NetworkClientConfig) (*NetworkClient, error) {
 }
 
 // Login authenticates with the UniFi controller using the configured credentials.
-// On success, a session cookie is stored in the HTTP client's cookie jar.
+// On success, a session cookie is stored in the HTTP client's cookie jar and
+// a CSRF token is fetched for subsequent write operations.
 //
 // Login can be called multiple times safely to re-establish an expired session.
 // If API calls return ErrUnauthorized, call Login again to refresh the session.
@@ -311,6 +313,37 @@ func (c *NetworkClient) Login(ctx context.Context) error {
 	}
 
 	c.loggedIn = true
+
+	if err := c.fetchCSRFToken(ctx); err != nil {
+		if c.Logger != nil {
+			c.Logger.Printf("warning: failed to fetch CSRF token: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func (c *NetworkClient) fetchCSRFToken(ctx context.Context) error {
+	csrfURL := c.BaseURL + "/proxy/network/api/s/" + url.PathEscape(c.Site) + "/self"
+	req, err := http.NewRequestWithContext(ctx, "GET", csrfURL, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if token := resp.Header.Get("X-Csrf-Token"); token != "" {
+		c.csrfToken = token
+		if c.Logger != nil {
+			c.Logger.Printf("acquired CSRF token")
+		}
+	}
+
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, maxErrorBodySize))
 	return nil
 }
 
@@ -348,6 +381,7 @@ func (c *NetworkClient) Logout(ctx context.Context) error {
 	}
 
 	c.loggedIn = false
+	c.csrfToken = ""
 	return nil
 }
 
@@ -468,6 +502,13 @@ func (c *NetworkClient) doV2Once(ctx context.Context, method, path string, bodyB
 		req.Header.Set("Content-Type", "application/json")
 	}
 
+	c.mu.RLock()
+	csrfToken := c.csrfToken
+	c.mu.RUnlock()
+	if csrfToken != "" && (method == "POST" || method == "PUT" || method == "DELETE") {
+		req.Header.Set("X-Csrf-Token", csrfToken)
+	}
+
 	if c.Logger != nil {
 		c.Logger.Printf("-> %s %s", method, reqURL)
 	}
@@ -516,6 +557,13 @@ func (c *NetworkClient) doOnce(ctx context.Context, method, path string, bodyByt
 	req.Header.Set("Accept", "application/json")
 	if bodyBytes != nil {
 		req.Header.Set("Content-Type", "application/json")
+	}
+
+	c.mu.RLock()
+	csrfToken := c.csrfToken
+	c.mu.RUnlock()
+	if csrfToken != "" && (method == "POST" || method == "PUT" || method == "DELETE") {
+		req.Header.Set("X-Csrf-Token", csrfToken)
 	}
 
 	if c.Logger != nil {
@@ -890,13 +938,12 @@ func (c *NetworkClient) CreatePortConf(ctx context.Context, portconf *PortConf) 
 
 func (c *NetworkClient) UpdatePortConf(ctx context.Context, id string, portconf *PortConf) (*PortConf, error) {
 	var portconfs []PortConf
-	endpoint := c.restPathWithID("portconf", id)
-	err := c.do(ctx, "PUT", endpoint, portconf, &portconfs)
+	err := c.do(ctx, "PUT", c.restPathWithID("portconf", id), portconf, &portconfs)
 	if err != nil {
 		return nil, err
 	}
 	if len(portconfs) == 0 {
-		return nil, &EmptyResponseError{Operation: "update", Resource: "port profile", Endpoint: endpoint}
+		return c.GetPortConf(ctx, id)
 	}
 	return &portconfs[0], nil
 }
@@ -1222,12 +1269,28 @@ func (c *NetworkClient) GetStaticDNS(ctx context.Context, id string) (*StaticDNS
 	var record StaticDNS
 	err := c.doV2(ctx, "GET", c.v2PathWithID("static-dns", id), nil, &record)
 	if err != nil {
+		if errors.Is(err, ErrMethodNotAllowed) {
+			return c.getStaticDNSByList(ctx, id)
+		}
 		return nil, err
 	}
 	if record.ID == "" {
 		return nil, ErrNotFound
 	}
 	return &record, nil
+}
+
+func (c *NetworkClient) getStaticDNSByList(ctx context.Context, id string) (*StaticDNS, error) {
+	records, err := c.ListStaticDNS(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range records {
+		if records[i].ID == id {
+			return &records[i], nil
+		}
+	}
+	return nil, ErrNotFound
 }
 
 func (c *NetworkClient) CreateStaticDNS(ctx context.Context, record *StaticDNS) (*StaticDNS, error) {
@@ -1289,12 +1352,28 @@ func (c *NetworkClient) GetTrafficRule(ctx context.Context, id string) (*Traffic
 	var rule TrafficRule
 	err := c.doV2(ctx, "GET", c.v2PathWithID("trafficrules", id), nil, &rule)
 	if err != nil {
+		if errors.Is(err, ErrMethodNotAllowed) {
+			return c.getTrafficRuleByList(ctx, id)
+		}
 		return nil, err
 	}
 	if rule.ID == "" {
 		return nil, ErrNotFound
 	}
 	return &rule, nil
+}
+
+func (c *NetworkClient) getTrafficRuleByList(ctx context.Context, id string) (*TrafficRule, error) {
+	rules, err := c.ListTrafficRules(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range rules {
+		if rules[i].ID == id {
+			return &rules[i], nil
+		}
+	}
+	return nil, ErrNotFound
 }
 
 func (c *NetworkClient) CreateTrafficRule(ctx context.Context, rule *TrafficRule) (*TrafficRule, error) {
@@ -1334,12 +1413,28 @@ func (c *NetworkClient) GetTrafficRoute(ctx context.Context, id string) (*Traffi
 	var route TrafficRoute
 	err := c.doV2(ctx, "GET", c.v2PathWithID("trafficroutes", id), nil, &route)
 	if err != nil {
+		if errors.Is(err, ErrMethodNotAllowed) {
+			return c.getTrafficRouteByList(ctx, id)
+		}
 		return nil, err
 	}
 	if route.ID == "" {
 		return nil, ErrNotFound
 	}
 	return &route, nil
+}
+
+func (c *NetworkClient) getTrafficRouteByList(ctx context.Context, id string) (*TrafficRoute, error) {
+	routes, err := c.ListTrafficRoutes(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range routes {
+		if routes[i].ID == id {
+			return &routes[i], nil
+		}
+	}
+	return nil, ErrNotFound
 }
 
 func (c *NetworkClient) CreateTrafficRoute(ctx context.Context, route *TrafficRoute) (*TrafficRoute, error) {
@@ -1434,12 +1529,15 @@ func (c *NetworkClient) ListQosRules(ctx context.Context) ([]QosRule, error) {
 // ContentFiltering operations (v2 API, read-only)
 
 func (c *NetworkClient) GetContentFiltering(ctx context.Context) (*ContentFiltering, error) {
-	var config ContentFiltering
-	err := c.doV2(ctx, "GET", c.v2Path("content-filtering"), nil, &config)
+	var configs []ContentFiltering
+	err := c.doV2(ctx, "GET", c.v2Path("content-filtering"), nil, &configs)
 	if err != nil {
 		return nil, err
 	}
-	return &config, nil
+	if len(configs) == 0 {
+		return nil, ErrNotFound
+	}
+	return &configs[0], nil
 }
 
 // VPN operations (v2 API, read-only)
