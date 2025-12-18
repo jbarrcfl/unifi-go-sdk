@@ -85,22 +85,27 @@ func TestNetworkClientDefaultSite(t *testing.T) {
 
 func TestNetworkClientLogin(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/auth/login" {
-			t.Errorf("expected path /api/auth/login, got %s", r.URL.Path)
-		}
-		if r.Method != "POST" {
-			t.Errorf("expected POST, got %s", r.Method)
-		}
+		switch r.URL.Path {
+		case "/api/auth/login":
+			if r.Method != "POST" {
+				t.Errorf("expected POST, got %s", r.Method)
+			}
 
-		var payload map[string]string
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			t.Errorf("failed to decode request body: %v", err)
-		}
-		if payload["username"] != "admin" || payload["password"] != "password" {
-			t.Errorf("unexpected credentials: %v", payload)
-		}
+			var payload map[string]string
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				t.Errorf("failed to decode request body: %v", err)
+			}
+			if payload["username"] != "admin" || payload["password"] != "password" {
+				t.Errorf("unexpected credentials: %v", payload)
+			}
 
-		w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
+		default:
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
 	}))
 	defer server.Close()
 
@@ -256,6 +261,9 @@ func TestNetworkClientListNetworks(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/networkconf":
 			if r.Method != "GET" {
 				t.Errorf("expected GET, got %s", r.Method)
@@ -320,6 +328,9 @@ func TestNetworkClientGetNetwork(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/networkconf/abc123":
 			if r.Method != "GET" {
 				t.Errorf("expected GET, got %s", r.Method)
@@ -369,6 +380,9 @@ func TestNetworkClientCreateNetwork(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
 			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/networkconf":
 			if r.Method != "POST" {
@@ -435,6 +449,9 @@ func TestNetworkClientDeleteNetwork(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/networkconf/abc123":
 			if r.Method != "DELETE" {
 				t.Errorf("expected DELETE, got %s", r.Method)
@@ -473,6 +490,9 @@ func TestNetworkClientDeleteAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
 			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/networkconf/abc123":
 			response := map[string]any{
@@ -523,6 +543,9 @@ func TestNetworkClientAPIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
 			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/networkconf":
 			response := map[string]any{
@@ -814,6 +837,9 @@ func TestNetworkClientCustomSite(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/mysite/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/mysite/rest/networkconf":
 			response := map[string]any{
 				"meta": map[string]string{"rc": "ok"},
@@ -855,6 +881,9 @@ func TestNetworkClientUpdateNetwork(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
 			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/networkconf/abc123":
 			if r.Method != "PUT" {
@@ -924,6 +953,9 @@ func TestNetworkClientUpdateFirewallRule(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/firewallrule/rule123":
 			if r.Method != "PUT" {
 				t.Errorf("expected PUT, got %s", r.Method)
@@ -979,6 +1011,9 @@ func TestNetworkClientConflictError(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/networkconf/abc123":
 			w.WriteHeader(http.StatusConflict)
 			w.Write([]byte(`{"error": "resource has dependencies"}`))
@@ -1015,6 +1050,9 @@ func TestNetworkClientPortConfs(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
 			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/portconf":
 			if r.Method == "GET" {
@@ -1166,6 +1204,9 @@ func TestNetworkClientRoutes(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/routing":
 			if r.Method == "GET" {
 				response := map[string]any{
@@ -1311,6 +1352,9 @@ func TestNetworkClientUserGroups(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
 			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/usergroup":
 			if r.Method == "GET" {
@@ -1462,6 +1506,9 @@ func TestNetworkClientRADIUSProfiles(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
 			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/radiusprofile":
 			if r.Method == "GET" {
@@ -1620,6 +1667,9 @@ func TestNetworkClientDynamicDNS(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/dynamicdns":
 			if r.Method == "GET" {
 				response := map[string]any{
@@ -1772,6 +1822,9 @@ func TestNetworkClientGetNotFound(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		default:
 			response := map[string]any{
 				"meta": map[string]string{"rc": "ok"},
@@ -1826,6 +1879,9 @@ func TestNetworkClientGetFirewallRule(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/firewallrule/rule123":
 			if r.Method != "GET" {
 				t.Errorf("expected GET, got %s", r.Method)
@@ -1863,6 +1919,9 @@ func TestNetworkClientCreateFirewallRule(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
 			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/firewallrule":
 			if r.Method != "POST" {
@@ -1902,6 +1961,9 @@ func TestNetworkClientDeleteFirewallRule(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
 			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/firewallrule/rule123":
 			if r.Method != "DELETE" {
@@ -1972,6 +2034,9 @@ func TestNetworkClientCreateFirewallGroup(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
 			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/firewallgroup":
 			if r.Method != "POST" {
@@ -2449,6 +2514,9 @@ func TestNetworkClientTransientErrorRetry(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/networkconf":
 			callCount++
 			if callCount < 2 {
@@ -2494,6 +2562,9 @@ func TestNetworkClientNonRetryableError(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		case "/proxy/network/api/s/default/rest/networkconf":
 			callCount++
 			w.WriteHeader(http.StatusBadRequest)
@@ -2532,6 +2603,9 @@ func TestNetworkClientRetryExhausted(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/auth/login":
 			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
 		default:
 			callCount++
 			w.WriteHeader(http.StatusBadGateway)
@@ -2567,6 +2641,9 @@ func TestNetworkClientContextCancellationDuringRetry(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
 			w.WriteHeader(http.StatusOK)
 		default:
 			callCount++
@@ -3331,24 +3408,24 @@ func TestNetworkClientNatRules(t *testing.T) {
 			switch r.Method {
 			case "GET":
 				response := []map[string]any{
-					{"_id": "nat1", "name": "SNAT Rule", "type": "SOURCE", "enabled": true},
+					{"_id": "nat1", "description": "SNAT Rule", "type": "SNAT", "enabled": true},
 				}
 				json.NewEncoder(w).Encode(response)
 			case "POST":
 				var rule NatRule
 				json.NewDecoder(r.Body).Decode(&rule)
-				response := map[string]any{"_id": "newnat", "name": rule.Name, "type": rule.Type}
+				response := map[string]any{"_id": "newnat", "description": rule.Description, "type": rule.Type}
 				json.NewEncoder(w).Encode(response)
 			}
 		case "/proxy/network/v2/api/site/default/nat/nat1":
 			switch r.Method {
 			case "GET":
-				response := map[string]any{"_id": "nat1", "name": "SNAT Rule", "type": "SOURCE"}
+				response := map[string]any{"_id": "nat1", "description": "SNAT Rule", "type": "SNAT"}
 				json.NewEncoder(w).Encode(response)
 			case "PUT":
 				var rule NatRule
 				json.NewDecoder(r.Body).Decode(&rule)
-				response := map[string]any{"_id": "nat1", "name": rule.Name}
+				response := map[string]any{"_id": "nat1", "description": rule.Description}
 				json.NewEncoder(w).Encode(response)
 			case "DELETE":
 				w.WriteHeader(http.StatusOK)
@@ -3374,8 +3451,8 @@ func TestNetworkClientNatRules(t *testing.T) {
 		if len(rules) != 1 {
 			t.Errorf("expected 1 rule, got %d", len(rules))
 		}
-		if rules[0].Type != "SOURCE" {
-			t.Errorf("expected type 'SOURCE', got '%s'", rules[0].Type)
+		if rules[0].Type != "SNAT" {
+			t.Errorf("expected type 'SNAT', got '%s'", rules[0].Type)
 		}
 	})
 
@@ -3390,7 +3467,7 @@ func TestNetworkClientNatRules(t *testing.T) {
 	})
 
 	t.Run("Create", func(t *testing.T) {
-		rule := &NatRule{Name: "DNAT Rule", Type: "DESTINATION"}
+		rule := &NatRule{Description: "DNAT Rule", Type: "DNAT"}
 		created, err := client.CreateNatRule(context.Background(), rule)
 		if err != nil {
 			t.Fatalf("CreateNatRule() error = %v", err)
@@ -3401,13 +3478,13 @@ func TestNetworkClientNatRules(t *testing.T) {
 	})
 
 	t.Run("Update", func(t *testing.T) {
-		rule := &NatRule{Name: "Updated NAT"}
+		rule := &NatRule{Description: "Updated NAT"}
 		updated, err := client.UpdateNatRule(context.Background(), "nat1", rule)
 		if err != nil {
 			t.Fatalf("UpdateNatRule() error = %v", err)
 		}
-		if updated.Name != "Updated NAT" {
-			t.Errorf("expected name 'Updated NAT', got '%s'", updated.Name)
+		if updated.Description != "Updated NAT" {
+			t.Errorf("expected description 'Updated NAT', got '%s'", updated.Description)
 		}
 	})
 
@@ -3430,7 +3507,7 @@ func TestNetworkClientReadOnlyV2APIs(t *testing.T) {
 			response := []map[string]any{{"_id": "qos1", "name": "QoS Rule 1", "enabled": true}}
 			json.NewEncoder(w).Encode(response)
 		case "/proxy/network/v2/api/site/default/content-filtering":
-			response := map[string]any{"enabled": true, "blocked_categories": []string{"adult", "gambling"}}
+			response := []map[string]any{{"enabled": true, "blocked_categories": []string{"adult", "gambling"}}}
 			json.NewEncoder(w).Encode(response)
 		case "/proxy/network/v2/api/site/default/vpn/connections":
 			response := map[string]any{
@@ -3511,6 +3588,156 @@ func TestNetworkClientReadOnlyV2APIs(t *testing.T) {
 		}
 		if slas[0].Target != "1.1.1.1" {
 			t.Errorf("expected target '1.1.1.1', got '%s'", slas[0].Target)
+		}
+	})
+}
+
+func TestNetworkClient405Fallback(t *testing.T) {
+	t.Run("StaticDNS_FallbackSuccess", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/auth/login":
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/self":
+				w.Header().Set("X-Csrf-Token", "test-token")
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/v2/api/site/default/static-dns":
+				response := []map[string]any{
+					{"_id": "dns1", "key": "host1.local", "value": "192.168.1.1"},
+					{"_id": "dns2", "key": "host2.local", "value": "192.168.1.2"},
+				}
+				json.NewEncoder(w).Encode(response)
+			case "/proxy/network/v2/api/site/default/static-dns/dns2":
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := NewNetworkClient(NetworkClientConfig{
+			BaseURL:  server.URL,
+			Username: "admin",
+			Password: "password",
+		})
+		client.Login(context.Background())
+
+		record, err := client.GetStaticDNS(context.Background(), "dns2")
+		if err != nil {
+			t.Fatalf("GetStaticDNS() error = %v, expected fallback to List", err)
+		}
+		if record.ID != "dns2" {
+			t.Errorf("expected ID 'dns2', got '%s'", record.ID)
+		}
+	})
+
+	t.Run("StaticDNS_FallbackNotFound", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/auth/login":
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/self":
+				w.Header().Set("X-Csrf-Token", "test-token")
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/v2/api/site/default/static-dns":
+				response := []map[string]any{
+					{"_id": "dns1", "key": "host1.local", "value": "192.168.1.1"},
+				}
+				json.NewEncoder(w).Encode(response)
+			case "/proxy/network/v2/api/site/default/static-dns/nonexistent":
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := NewNetworkClient(NetworkClientConfig{
+			BaseURL:  server.URL,
+			Username: "admin",
+			Password: "password",
+		})
+		client.Login(context.Background())
+
+		_, err := client.GetStaticDNS(context.Background(), "nonexistent")
+		if !errors.Is(err, ErrNotFound) {
+			t.Errorf("expected ErrNotFound, got %v", err)
+		}
+	})
+
+	t.Run("TrafficRule_FallbackSuccess", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/auth/login":
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/self":
+				w.Header().Set("X-Csrf-Token", "test-token")
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/v2/api/site/default/trafficrules":
+				response := []map[string]any{
+					{"_id": "rule1", "description": "Rule 1"},
+					{"_id": "rule2", "description": "Rule 2"},
+				}
+				json.NewEncoder(w).Encode(response)
+			case "/proxy/network/v2/api/site/default/trafficrules/rule2":
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := NewNetworkClient(NetworkClientConfig{
+			BaseURL:  server.URL,
+			Username: "admin",
+			Password: "password",
+		})
+		client.Login(context.Background())
+
+		rule, err := client.GetTrafficRule(context.Background(), "rule2")
+		if err != nil {
+			t.Fatalf("GetTrafficRule() error = %v, expected fallback to List", err)
+		}
+		if rule.ID != "rule2" {
+			t.Errorf("expected ID 'rule2', got '%s'", rule.ID)
+		}
+	})
+
+	t.Run("TrafficRoute_FallbackSuccess", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/auth/login":
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/self":
+				w.Header().Set("X-Csrf-Token", "test-token")
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/v2/api/site/default/trafficroutes":
+				response := []map[string]any{
+					{"_id": "route1", "description": "Route 1"},
+					{"_id": "route2", "description": "Route 2"},
+				}
+				json.NewEncoder(w).Encode(response)
+			case "/proxy/network/v2/api/site/default/trafficroutes/route2":
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := NewNetworkClient(NetworkClientConfig{
+			BaseURL:  server.URL,
+			Username: "admin",
+			Password: "password",
+		})
+		client.Login(context.Background())
+
+		route, err := client.GetTrafficRoute(context.Background(), "route2")
+		if err != nil {
+			t.Fatalf("GetTrafficRoute() error = %v, expected fallback to List", err)
+		}
+		if route.ID != "route2" {
+			t.Errorf("expected ID 'route2', got '%s'", route.ID)
 		}
 	})
 }
