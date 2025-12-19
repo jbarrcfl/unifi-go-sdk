@@ -42,7 +42,7 @@ Two distinct APIs, both implemented:
 2. **Network API** (local controller)
    - Legacy REST Base: `https://<controller>/proxy/network/api/s/{site}/rest/`
    - v2 API Base: `https://<controller>/proxy/network/v2/api/site/{site}/`
-   - Auth: Session-based (username/password → cookie)
+   - Auth: API key via `X-API-KEY` header (preferred) or session-based (username/password → cookie)
    - Legacy REST CRUD: networks, firewall rules/groups, port forwards, WLANs, port profiles, routes, user groups, RADIUS, DDNS
    - v2 API CRUD: firewall policies (zone-based), firewall zones, static DNS, traffic rules, traffic routes, NAT rules
    - v2 API Read-only: active clients, network devices, ACL rules, QoS rules, content filtering, VPN connections, WAN SLAs
@@ -59,18 +59,20 @@ go test -v -race ./pkg/...
 Integration tests run against a real UniFi OS Server or USG. They use the `integration` build tag and load credentials from `.env` file or environment variables:
 
 ```bash
-# Option 1: Use .env file (project root)
+# Option 1: API key authentication (preferred)
+cat > .env << 'EOF'
+UNIFI_NETWORK_URL=https://192.168.1.1
+UNIFI_NETWORK_API_KEY=your-api-key
+UNIFI_NETWORK_SITE=default
+EOF
+
+# Option 2: Username/password authentication
 cat > .env << 'EOF'
 UNIFI_NETWORK_URL=https://192.168.1.1
 UNIFI_NETWORK_USER=admin
 UNIFI_NETWORK_PASS=your-password
 UNIFI_NETWORK_SITE=default
 EOF
-
-# Option 2: Export environment variables
-export UNIFI_NETWORK_URL=https://192.168.1.1
-export UNIFI_NETWORK_USER=admin
-export UNIFI_NETWORK_PASS=your-password
 
 # Run integration tests
 go test -tags integration -v ./pkg/unifi/...
@@ -101,7 +103,7 @@ This SDK is intended to support a Terraform provider. Prioritize type safety wit
 ## SDK Features
 
 - `SiteManagerClient` - Cloud API with automatic pagination, rate limit retry with exponential backoff + jitter
-- `NetworkClient` - Controller API with session-based auth, full CRUD operations, retry with exponential backoff + jitter
+- `NetworkClient` - Controller API with API key or session-based auth, full CRUD operations, retry with exponential backoff + jitter
 - Sentinel errors for common HTTP status codes
 - Configurable retry logic (MaxRetries, MaxRetryWait) on both clients
 - Configurable debug logging via Logger interface
@@ -112,7 +114,7 @@ This SDK is intended to support a Terraform provider. Prioritize type safety wit
 - **OpenAPI-driven development**: The `openapi/` directory contains authoritative API specifications. When adding new endpoints or models, consult these specs first. They were derived from live API responses via Playwright browser automation.
 - **Reactive rate limiting over proactive**: Terraform's sequential execution model rarely hits limits. Reactive retry with exponential backoff + jitter adapts automatically.
 - **Interface-first**: `SiteManager` and `NetworkManager` interfaces enable mocking without test dependencies on real API.
-- **Session-based auth for Network API**: The official Integration API is read-only. Legacy REST API with cookie auth supports writes.
+- **Dual auth for Network API**: Supports API key (preferred for automation) or session-based auth. API key avoids login rate limits.
 
 ## Preferences
 
