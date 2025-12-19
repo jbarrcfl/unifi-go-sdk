@@ -123,3 +123,31 @@ func Example_pointerHelpers() {
 	fmt.Printf("Rule: %s, Enabled: %v\n", rule.Name, *rule.Enabled)
 	// Output: Rule: Block IOT to LAN, Enabled: true
 }
+
+func Example_firewallPolicyBuilder() {
+	// Use builders for complex structs like FirewallPolicy
+	policy := unifi.NewFirewallPolicyBuilder().
+		Name("Block IoT to LAN").
+		Action("DROP").
+		Protocol("all").
+		Logging(true).
+		SourceFrom(
+			unifi.NewPolicyEndpointBuilder().
+				ZoneID("iot-zone-id").
+				MatchingTarget("ANY"),
+		).
+		DestinationFrom(
+			unifi.NewPolicyEndpointBuilder().
+				ZoneID("lan-zone-id").
+				Port("22").
+				PortMatchingType("SPECIFIC"),
+		).
+		ScheduleFrom(
+			unifi.NewPolicyScheduleBuilder().
+				Custom("09:00", "17:00", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"),
+		).
+		Build()
+
+	fmt.Printf("Policy: %s, Action: %s, Enabled: %v\n", policy.Name, policy.Action, *policy.Enabled)
+	// Output: Policy: Block IoT to LAN, Action: DROP, Enabled: true
+}

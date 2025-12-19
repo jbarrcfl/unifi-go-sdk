@@ -288,6 +288,37 @@ profile, err := client.CreatePortConf(ctx, &unifi.PortConf{
 })
 ```
 
+#### Create a Firewall Policy (v2 API) with Builder
+
+For complex structs like `FirewallPolicy`, use the fluent builder API:
+
+```go
+policy := unifi.NewFirewallPolicyBuilder().
+    Name("Block IoT to LAN").
+    Action("DROP").
+    Protocol("all").
+    Logging(true).
+    SourceFrom(
+        unifi.NewPolicyEndpointBuilder().
+            ZoneID("iot-zone-id").
+            MatchingTarget("ANY"),
+    ).
+    DestinationFrom(
+        unifi.NewPolicyEndpointBuilder().
+            ZoneID("lan-zone-id").
+            Port("22").
+            PortMatchingType("SPECIFIC"),
+    ).
+    Build()
+
+created, err := client.CreateFirewallPolicy(ctx, &policy)
+```
+
+Builders provide sensible defaults (e.g., `Enabled=true`, `IPVersion=IPv4`) and support method chaining for readable configuration. Available builders:
+- `NewFirewallPolicyBuilder()` - Zone-based firewall policies
+- `NewPolicyEndpointBuilder()` - Source/destination endpoint configuration
+- `NewPolicyScheduleBuilder()` - Time-based scheduling with `Always()` and `Custom()` helpers
+
 ### Interfaces for Mocking
 
 Both clients implement interfaces for easy mocking in tests:
