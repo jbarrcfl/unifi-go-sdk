@@ -11,13 +11,19 @@ import (
 	"time"
 )
 
+// Shared constants for HTTP clients and retry logic.
 const (
-	maxErrorBodySize    = 64 * 1024        // 64KB for error responses
-	maxResponseBodySize = 10 * 1024 * 1024 // 10MB for success responses
-	defaultTimeout      = 30 * time.Second
-	baseBackoff         = 1 * time.Second
-	maxBackoff          = 30 * time.Second
-	jitterFraction      = 0.5
+	// Response body size limits to prevent memory exhaustion from malformed responses.
+	maxErrorBodySize    = 64 * 1024        // 64KB limit for error response bodies
+	maxResponseBodySize = 10 * 1024 * 1024 // 10MB limit for success response bodies
+
+	// Default HTTP client timeout, used by both SiteManagerClient and NetworkClient.
+	defaultTimeout = 30 * time.Second
+
+	// Exponential backoff parameters for retry logic.
+	baseBackoff    = 1 * time.Second  // Initial backoff duration
+	maxBackoff     = 60 * time.Second // Maximum backoff before jitter
+	jitterFraction = 0.5              // Up to 50% additional random delay
 )
 
 var retryAfterRegex = regexp.MustCompile(`retry after ([\d.]+)s`)
