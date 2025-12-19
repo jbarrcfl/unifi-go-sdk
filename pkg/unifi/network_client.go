@@ -187,6 +187,12 @@ var _ NetworkManager = (*NetworkClient)(nil)
 // re-authentication when sessions expire. This is standard practice for
 // session-based SDKs and is appropriate for typical usage patterns like
 // Terraform providers where the process is short-lived.
+//
+// # CSRF Token Handling
+//
+// For session-based auth, the controller requires a CSRF token for write operations
+// (POST, PUT, DELETE). The token is automatically fetched during Login() and included
+// in subsequent requests. API key auth does not require CSRF tokens.
 type NetworkClient struct {
 	BaseURL    string
 	Site       string
@@ -294,7 +300,8 @@ func NewNetworkClient(cfg NetworkClientConfig) (*NetworkClient, error) {
 // Login can be called multiple times safely to re-establish an expired session.
 // If API calls return ErrUnauthorized, call Login again to refresh the session.
 //
-// When using API key authentication, this method is a no-op and returns nil.
+// When using API key authentication, login is not required; this method
+// returns nil immediately without making any network requests.
 func (c *NetworkClient) Login(ctx context.Context) error {
 	if c.apiKey != "" {
 		return nil
@@ -377,9 +384,10 @@ func (c *NetworkClient) fetchCSRFToken(ctx context.Context) error {
 }
 
 // Logout ends the current session with the UniFi controller.
-// It is safe to call even if not currently logged in (no-op in that case).
+// It is safe to call even if not currently logged in.
 //
-// When using API key authentication, this method is a no-op and returns nil.
+// When using API key authentication, logout is not required; this method
+// returns nil immediately without making any network requests.
 func (c *NetworkClient) Logout(ctx context.Context) error {
 	if c.apiKey != "" {
 		return nil
