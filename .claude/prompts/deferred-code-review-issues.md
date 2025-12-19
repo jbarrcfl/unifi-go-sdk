@@ -19,28 +19,26 @@ The method `IsLoggedIn()` is misleading because:
 
 ---
 
-## 2. Add Builder Pattern for Complex Structs
+## ~~2. Add Builder Pattern for Complex Structs~~ (RESOLVED)
 
-**Files:** `pkg/unifi/network_models.go`
-**Type:** New feature
+**Status:** Resolved - December 2025
 
-Structs like `FirewallPolicy`, `Network`, and `WLANConf` have many fields with pointer types for optional values. A builder pattern would improve ergonomics.
+Builder pattern implemented in `pkg/unifi/builders.go` for:
+- `FirewallPolicyBuilder` - Fluent API for FirewallPolicy with defaults (Enabled=true, IPVersion=IPv4)
+- `PolicyEndpointBuilder` - Fluent API for source/destination endpoints
+- `PolicyScheduleBuilder` - Fluent API for schedules with `Always()` and `Custom()` helpers
 
-**Example:**
+Example usage:
 ```go
 policy := unifi.NewFirewallPolicyBuilder().
     Name("Block IoT to LAN").
-    Action("BLOCK").
-    Source(unifi.PolicyEndpoint{ZoneID: "iot-zone-id"}).
-    Destination(unifi.PolicyEndpoint{ZoneID: "lan-zone-id"}).
+    Action("DROP").
+    SourceFrom(unifi.NewPolicyEndpointBuilder().ZoneID("iot-zone-id")).
+    DestinationFrom(unifi.NewPolicyEndpointBuilder().ZoneID("lan-zone-id")).
     Build()
 ```
 
-**Structs to consider:**
-- `FirewallPolicy` - Many nested PolicyEndpoint fields
-- `Network` - WAN, DHCP, VLAN settings
-- `WLANConf` - Security, schedule, bandwidth settings
-- `TrafficRule` - Complex matching criteria
+**Future consideration:** Add builders for `Network`, `WLANConf`, `TrafficRule` if needed
 
 ---
 
@@ -95,7 +93,7 @@ Audit confirmed all Go files follow consistent comment conventions:
 When addressing these issues:
 
 1. **Breaking changes (1, 4):** Consider a v2 release or deprecation warnings
-2. **New features (2):** Can be added without breaking existing code
+2. ~~**New features (2):** Can be added without breaking existing code~~ (RESOLVED)
 3. ~~**Style fixes (5):** Low priority, do opportunistically~~ (RESOLVED)
 4. ~~**Network struct refactoring (3):**~~ (RESOLVED)
 
