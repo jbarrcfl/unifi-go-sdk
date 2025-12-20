@@ -122,7 +122,7 @@ type NetworkManager interface {
 	ListActiveClients(ctx context.Context) ([]Client, error)
 
 	// v2 API - Devices (read-only)
-	ListNetworkDevices(ctx context.Context) (*DeviceList, error)
+	ListDevices(ctx context.Context) (*DeviceList, error)
 
 	// v2 API - Traffic Rules
 	ListTrafficRules(ctx context.Context) ([]TrafficRule, error)
@@ -1407,7 +1407,7 @@ func (c *NetworkClient) ListActiveClients(ctx context.Context) ([]Client, error)
 
 // Device operations (v2 API, read-only)
 
-func (c *NetworkClient) ListNetworkDevices(ctx context.Context) (*DeviceList, error) {
+func (c *NetworkClient) ListDevices(ctx context.Context) (*DeviceList, error) {
 	var devices DeviceList
 	err := c.doV2(ctx, "GET", c.v2Path("device"), nil, &devices)
 	if err != nil {

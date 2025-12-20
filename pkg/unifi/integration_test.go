@@ -1226,10 +1226,10 @@ func TestIntegration_V2_ReadOnlyEndpoints(t *testing.T) {
 		t.Logf("Found %d active clients", len(clients))
 	})
 
-	t.Run("ListNetworkDevices", func(t *testing.T) {
-		devices, err := client.ListNetworkDevices(ctx)
+	t.Run("ListDevices", func(t *testing.T) {
+		devices, err := client.ListDevices(ctx)
 		if err != nil {
-			t.Errorf("ListNetworkDevices failed: %v", err)
+			t.Errorf("ListDevices failed: %v", err)
 		}
 		t.Logf("Found %d network devices", len(devices.NetworkDevices))
 	})

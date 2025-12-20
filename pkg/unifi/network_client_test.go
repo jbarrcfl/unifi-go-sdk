@@ -3287,7 +3287,7 @@ func TestNetworkClientListActiveClients(t *testing.T) {
 	}
 }
 
-func TestNetworkClientListNetworkDevices(t *testing.T) {
+func TestNetworkClientListDevices(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/auth/login":
@@ -3336,9 +3336,9 @@ func TestNetworkClientListNetworkDevices(t *testing.T) {
 	})
 	client.Login(context.Background())
 
-	devices, err := client.ListNetworkDevices(context.Background())
+	devices, err := client.ListDevices(context.Background())
 	if err != nil {
-		t.Fatalf("ListNetworkDevices() error = %v", err)
+		t.Fatalf("ListDevices() error = %v", err)
 	}
 	if len(devices.NetworkDevices) != 2 {
 		t.Errorf("expected 2 network devices, got %d", len(devices.NetworkDevices))
