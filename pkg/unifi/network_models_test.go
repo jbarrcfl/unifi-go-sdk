@@ -346,6 +346,147 @@ func TestNetworkValidate(t *testing.T) {
 	}
 }
 
+func TestNetworkDHCPGatewayValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		gateway NetworkDHCPGateway
+		wantErr string
+	}{
+		{"valid empty", NetworkDHCPGateway{}, ""},
+		{"valid gateway", NetworkDHCPGateway{DHCPDGateway: "192.168.1.1"}, ""},
+		{"invalid gateway", NetworkDHCPGateway{DHCPDGateway: "not-an-ip"}, "dhcpd_gateway must be a valid IP address"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.gateway.Validate()
+			checkError(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestNetworkDHCPDNSValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		dns     NetworkDHCPDNS
+		wantErr string
+	}{
+		{"valid empty", NetworkDHCPDNS{}, ""},
+		{"valid dns1", NetworkDHCPDNS{DHCPDDns1: "8.8.8.8"}, ""},
+		{"valid all dns", NetworkDHCPDNS{DHCPDDns1: "8.8.8.8", DHCPDDns2: "8.8.4.4", DHCPDDns3: "1.1.1.1", DHCPDDns4: "1.0.0.1"}, ""},
+		{"invalid dns1", NetworkDHCPDNS{DHCPDDns1: "invalid"}, "dhcpd_dns_1 must be a valid IP address"},
+		{"invalid dns2", NetworkDHCPDNS{DHCPDDns2: "invalid"}, "dhcpd_dns_2 must be a valid IP address"},
+		{"invalid dns3", NetworkDHCPDNS{DHCPDDns3: "invalid"}, "dhcpd_dns_3 must be a valid IP address"},
+		{"invalid dns4", NetworkDHCPDNS{DHCPDDns4: "invalid"}, "dhcpd_dns_4 must be a valid IP address"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.dns.Validate()
+			checkError(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestNetworkWANIPv6Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		wan     NetworkWANIPv6
+		wantErr string
+	}{
+		{"valid empty", NetworkWANIPv6{}, ""},
+		{"valid disabled", NetworkWANIPv6{WANTypeV6: "disabled"}, ""},
+		{"valid dhcpv6", NetworkWANIPv6{WANTypeV6: "dhcpv6"}, ""},
+		{"valid static", NetworkWANIPv6{WANTypeV6: "static"}, ""},
+		{"valid autoconf", NetworkWANIPv6{WANTypeV6: "autoconf"}, ""},
+		{"invalid type", NetworkWANIPv6{WANTypeV6: "invalid"}, "wan_type_v6 must be one of"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.wan.Validate()
+			checkError(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestNetworkWANLoadBalanceValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		wan     NetworkWANLoadBalance
+		wantErr string
+	}{
+		{"valid empty", NetworkWANLoadBalance{}, ""},
+		{"valid failover-only", NetworkWANLoadBalance{WANLoadBalanceType: "failover-only"}, ""},
+		{"valid weighted", NetworkWANLoadBalance{WANLoadBalanceType: "weighted"}, ""},
+		{"invalid type", NetworkWANLoadBalance{WANLoadBalanceType: "invalid"}, "wan_load_balance_type must be one of"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.wan.Validate()
+			checkError(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestPolicyEndpointValidate(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint PolicyEndpoint
+		wantErr  string
+	}{
+		{"valid empty", PolicyEndpoint{}, ""},
+		{"valid matching target ANY", PolicyEndpoint{MatchingTarget: "ANY"}, ""},
+		{"valid matching target IP", PolicyEndpoint{MatchingTarget: "IP"}, ""},
+		{"valid matching target NETWORK", PolicyEndpoint{MatchingTarget: "NETWORK"}, ""},
+		{"invalid matching target", PolicyEndpoint{MatchingTarget: "INVALID"}, "matching_target must be one of"},
+		{"valid matching target type SPECIFIC", PolicyEndpoint{MatchingTargetType: "SPECIFIC"}, ""},
+		{"valid matching target type OBJECT", PolicyEndpoint{MatchingTargetType: "OBJECT"}, ""},
+		{"invalid matching target type", PolicyEndpoint{MatchingTargetType: "INVALID"}, "matching_target_type must be one of"},
+		{"valid port matching type ANY", PolicyEndpoint{PortMatchingType: "ANY"}, ""},
+		{"valid port matching type SPECIFIC", PolicyEndpoint{PortMatchingType: "SPECIFIC"}, ""},
+		{"invalid port matching type", PolicyEndpoint{PortMatchingType: "INVALID"}, "port_matching_type must be one of"},
+		{"valid IPs", PolicyEndpoint{IPs: []string{"192.168.1.1", "10.0.0.0/8"}}, ""},
+		{"invalid IP", PolicyEndpoint{IPs: []string{"invalid"}}, "must be a valid IP address or CIDR"},
+		{"valid port", PolicyEndpoint{Port: "443"}, ""},
+		{"valid port range", PolicyEndpoint{Port: "80-443"}, ""},
+		{"invalid port", PolicyEndpoint{Port: "invalid"}, "port must be a valid port or port range"},
+		{"valid MAC", PolicyEndpoint{MAC: "00:11:22:33:44:55"}, ""},
+		{"invalid MAC", PolicyEndpoint{MAC: "invalid"}, "mac must be a valid MAC address"},
+		{"valid client MACs", PolicyEndpoint{ClientMACs: []string{"00:11:22:33:44:55", "AA:BB:CC:DD:EE:FF"}}, ""},
+		{"invalid client MAC", PolicyEndpoint{ClientMACs: []string{"invalid"}}, "client_mac \"invalid\" must be a valid MAC address"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.endpoint.Validate()
+			checkError(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestPolicyScheduleValidate(t *testing.T) {
+	tests := []struct {
+		name     string
+		schedule PolicySchedule
+		wantErr  string
+	}{
+		{"valid empty", PolicySchedule{}, ""},
+		{"valid mode ALWAYS", PolicySchedule{Mode: "ALWAYS"}, ""},
+		{"valid mode CUSTOM", PolicySchedule{Mode: "CUSTOM"}, ""},
+		{"invalid mode", PolicySchedule{Mode: "INVALID"}, "mode must be one of"},
+		{"valid time range start", PolicySchedule{TimeRangeStart: "08:00"}, ""},
+		{"valid time range end", PolicySchedule{TimeRangeEnd: "17:00"}, ""},
+		{"invalid time range start", PolicySchedule{TimeRangeStart: "invalid"}, "time_range_start must be in HH:MM format"},
+		{"invalid time range end", PolicySchedule{TimeRangeEnd: "25:00"}, "time_range_end must be in HH:MM format"},
+		{"valid days", PolicySchedule{DaysOfWeek: []string{"MONDAY", "FRIDAY"}}, ""},
+		{"valid all days", PolicySchedule{DaysOfWeek: []string{"MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"}}, ""},
+		{"invalid day", PolicySchedule{DaysOfWeek: []string{"INVALID"}}, "day \"INVALID\" must be one of"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.schedule.Validate()
+			checkError(t, err, tt.wantErr)
+		})
+	}
+}
+
 func checkError(t *testing.T, err error, wantErr string) {
 	t.Helper()
 	if wantErr == "" {
