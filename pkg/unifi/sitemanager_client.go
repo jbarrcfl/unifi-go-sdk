@@ -3,7 +3,6 @@ package unifi
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -90,47 +89,9 @@ func NewSiteManagerClient(cfg SiteManagerClientConfig) (*SiteManagerClient, erro
 }
 
 func (c *SiteManagerClient) do(ctx context.Context, method, path string, result any) error {
-	var lastErr error
-	maxAttempts := c.maxRetries + 1
-
-	for attempt := range maxAttempts {
-		lastErr = c.doOnce(ctx, method, path, result)
-		if lastErr == nil {
-			return nil
-		}
-
-		if !isRetryable(lastErr) {
-			return lastErr
-		}
-
-		if attempt >= maxAttempts-1 {
-			break
-		}
-
-		wait := time.Duration(0)
-		var apiErr *APIError
-		if errors.As(lastErr, &apiErr) && apiErr.StatusCode == 429 {
-			wait = parseRetryAfterHeader(apiErr.RetryAfterHeader)
-			if wait == 0 {
-				wait = parseRetryAfterBody(apiErr.Message)
-			}
-		}
-		wait = applyBackoffWithJitter(wait, attempt, c.maxRetryWait)
-
-		if c.Logger != nil {
-			c.Logger.Printf("retrying in %v (attempt %d/%d)", wait, attempt+1, c.maxRetries)
-		}
-
-		timer := time.NewTimer(wait)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return ctx.Err()
-		case <-timer.C:
-		}
-	}
-
-	return lastErr
+	return executeWithRetry(ctx, c.Logger, c.maxRetries, c.maxRetryWait, func() error {
+		return c.doOnce(ctx, method, path, result)
+	})
 }
 
 func (c *SiteManagerClient) doOnce(ctx context.Context, method, path string, result any) error {

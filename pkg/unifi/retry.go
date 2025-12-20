@@ -101,3 +101,47 @@ func parseRetryAfterBody(msg string) time.Duration {
 	}
 	return 0
 }
+
+func executeWithRetry(ctx context.Context, logger Logger, maxRetries int, maxRetryWait time.Duration, fn func() error) error {
+	var lastErr error
+	maxAttempts := maxRetries + 1
+
+	for attempt := range maxAttempts {
+		lastErr = fn()
+		if lastErr == nil {
+			return nil
+		}
+
+		if !isRetryable(lastErr) {
+			return lastErr
+		}
+
+		if attempt >= maxAttempts-1 {
+			break
+		}
+
+		wait := time.Duration(0)
+		var apiErr *APIError
+		if errors.As(lastErr, &apiErr) && apiErr.StatusCode == 429 {
+			wait = parseRetryAfterHeader(apiErr.RetryAfterHeader)
+			if wait == 0 {
+				wait = parseRetryAfterBody(apiErr.Message)
+			}
+		}
+		wait = applyBackoffWithJitter(wait, attempt, maxRetryWait)
+
+		if logger != nil {
+			logger.Printf("retrying in %v (attempt %d/%d)", wait, attempt+1, maxRetries)
+		}
+
+		timer := time.NewTimer(wait)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
+
+	return lastErr
+}

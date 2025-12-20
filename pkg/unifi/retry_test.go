@@ -129,3 +129,64 @@ func TestApplyBackoffWithJitterMaxWaitRespected(t *testing.T) {
 		t.Errorf("server wait %v exceeds maxWait %v", wait, maxWait)
 	}
 }
+
+func TestExecuteWithRetrySuccess(t *testing.T) {
+	attempts := 0
+	err := executeWithRetry(context.Background(), nil, 3, 60*time.Second, func() error {
+		attempts++
+		return nil
+	})
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+	if attempts != 1 {
+		t.Errorf("expected 1 attempt, got %d", attempts)
+	}
+}
+
+func TestExecuteWithRetryEventualSuccess(t *testing.T) {
+	attempts := 0
+	err := executeWithRetry(context.Background(), nil, 3, 1*time.Second, func() error {
+		attempts++
+		if attempts < 3 {
+			return &APIError{StatusCode: 503}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+	if attempts != 3 {
+		t.Errorf("expected 3 attempts, got %d", attempts)
+	}
+}
+
+func TestExecuteWithRetryNonRetryable(t *testing.T) {
+	attempts := 0
+	err := executeWithRetry(context.Background(), nil, 3, 60*time.Second, func() error {
+		attempts++
+		return &APIError{StatusCode: 404}
+	})
+	if err == nil {
+		t.Error("expected error, got nil")
+	}
+	if attempts != 1 {
+		t.Errorf("expected 1 attempt for non-retryable error, got %d", attempts)
+	}
+}
+
+func TestExecuteWithRetryContextCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	attempts := 0
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+	err := executeWithRetry(ctx, nil, 10, 60*time.Second, func() error {
+		attempts++
+		return &APIError{StatusCode: 503}
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("expected context.Canceled, got %v", err)
+	}
+}
