@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-func intPtr(i int) *int { return &i }
-
 func newTestSiteManagerClient(t *testing.T, apiKey string) *SiteManagerClient {
 	t.Helper()
 	client, err := NewSiteManagerClient(SiteManagerClientConfig{APIKey: apiKey})
@@ -60,7 +58,7 @@ func TestNewSiteManagerClientCustomConfig(t *testing.T) {
 		APIKey:       "test-key",
 		BaseURL:      "https://custom.api.com",
 		Timeout:      60 * time.Second,
-		MaxRetries:   intPtr(5),
+		MaxRetries:   IntPtr(5),
 		MaxRetryWait: 120 * time.Second,
 	})
 	if err != nil {
@@ -340,7 +338,7 @@ func TestErrorHandling(t *testing.T) {
 			client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
 				APIKey:     "test-key",
 				BaseURL:    server.URL,
-				MaxRetries: intPtr(1),
+				MaxRetries: IntPtr(1),
 			})
 
 			_, err := client.ListHosts(context.Background(), nil)
@@ -679,7 +677,7 @@ func TestRateLimitExhausted(t *testing.T) {
 	client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
 		APIKey:     "test-key",
 		BaseURL:    server.URL,
-		MaxRetries: intPtr(2),
+		MaxRetries: IntPtr(2),
 	})
 
 	_, err := client.ListHosts(context.Background(), nil)
@@ -750,7 +748,7 @@ func TestTransientErrorRetry(t *testing.T) {
 			client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
 				APIKey:     "test-key",
 				BaseURL:    server.URL,
-				MaxRetries: intPtr(2),
+				MaxRetries: IntPtr(2),
 			})
 
 			resp, err := client.ListHosts(context.Background(), nil)
@@ -780,7 +778,7 @@ func TestNonRetryableError(t *testing.T) {
 	client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
 		APIKey:     "test-key",
 		BaseURL:    server.URL,
-		MaxRetries: intPtr(3),
+		MaxRetries: IntPtr(3),
 	})
 
 	_, err := client.ListHosts(context.Background(), nil)
@@ -809,7 +807,7 @@ func TestMaxRetriesZeroDisablesRetry(t *testing.T) {
 	client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
 		APIKey:     "test-key",
 		BaseURL:    server.URL,
-		MaxRetries: intPtr(0),
+		MaxRetries: IntPtr(0),
 	})
 
 	_, err := client.ListHosts(context.Background(), nil)
@@ -1041,7 +1039,7 @@ func TestRetryAfterHeaderInAPIError(t *testing.T) {
 	client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
 		APIKey:     "test-key",
 		BaseURL:    server.URL,
-		MaxRetries: intPtr(1),
+		MaxRetries: IntPtr(1),
 	})
 
 	_, err := client.ListHosts(context.Background(), nil)

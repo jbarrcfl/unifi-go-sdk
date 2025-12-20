@@ -2714,7 +2714,7 @@ func TestNetworkClientTransientErrorRetry(t *testing.T) {
 		BaseURL:    server.URL,
 		Username:   "admin",
 		Password:   "password",
-		MaxRetries: intPtr(2),
+		MaxRetries: IntPtr(2),
 	})
 	client.Login(context.Background())
 
@@ -2754,7 +2754,7 @@ func TestNetworkClientNonRetryableError(t *testing.T) {
 		BaseURL:    server.URL,
 		Username:   "admin",
 		Password:   "password",
-		MaxRetries: intPtr(3),
+		MaxRetries: IntPtr(3),
 	})
 	client.Login(context.Background())
 
@@ -2793,7 +2793,7 @@ func TestNetworkClientRetryExhausted(t *testing.T) {
 		BaseURL:    server.URL,
 		Username:   "admin",
 		Password:   "password",
-		MaxRetries: intPtr(2),
+		MaxRetries: IntPtr(2),
 	})
 	client.Login(context.Background())
 
@@ -2832,7 +2832,7 @@ func TestNetworkClientContextCancellationDuringRetry(t *testing.T) {
 		BaseURL:      server.URL,
 		Username:     "admin",
 		Password:     "password",
-		MaxRetries:   intPtr(5),
+		MaxRetries:   IntPtr(5),
 		MaxRetryWait: 60 * time.Second,
 	})
 	client.Login(context.Background())
@@ -3371,7 +3371,7 @@ func TestNetworkClientV2APIRetry(t *testing.T) {
 		BaseURL:    server.URL,
 		Username:   "admin",
 		Password:   "password",
-		MaxRetries: intPtr(2),
+		MaxRetries: IntPtr(2),
 	})
 	client.Login(context.Background())
 
