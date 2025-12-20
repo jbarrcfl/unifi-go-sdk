@@ -457,8 +457,8 @@ func TestListAllHostsMidPaginationError(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(resp)
 		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("internal server error"))
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("bad request"))
 		}
 	}))
 	defer server.Close()
@@ -471,8 +471,8 @@ func TestListAllHostsMidPaginationError(t *testing.T) {
 		t.Fatal("expected error on second page, got nil")
 	}
 
-	if !errors.Is(err, ErrServerError) {
-		t.Errorf("expected ErrServerError, got %v", err)
+	if !errors.Is(err, ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest, got %v", err)
 	}
 
 	if hosts != nil {
@@ -837,7 +837,7 @@ func TestIsRetryable(t *testing.T) {
 		{"400", &APIError{StatusCode: 400}, false},
 		{"401", &APIError{StatusCode: 401}, false},
 		{"404", &APIError{StatusCode: 404}, false},
-		{"500", &APIError{StatusCode: 500}, false},
+		{"500", &APIError{StatusCode: 500}, true},
 		{"DeadlineExceeded", context.DeadlineExceeded, true},
 	}
 

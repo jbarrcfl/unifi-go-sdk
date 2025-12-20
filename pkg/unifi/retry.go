@@ -32,7 +32,7 @@ func isRetryable(err error) bool {
 	var apiErr *APIError
 	if errors.As(err, &apiErr) {
 		switch apiErr.StatusCode {
-		case 429, 502, 503, 504:
+		case 429, 500, 502, 503, 504:
 			return true
 		}
 		return false
