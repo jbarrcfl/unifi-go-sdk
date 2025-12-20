@@ -2854,6 +2854,38 @@ func TestNetworkClientContextCancellationDuringRetry(t *testing.T) {
 	}
 }
 
+func TestNetworkClientRetryAfterHeader(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/proxy/network/api/s/default/rest/networkconf":
+			w.Header().Set("Retry-After", "120")
+			w.WriteHeader(http.StatusTooManyRequests)
+			w.Write([]byte("rate limited"))
+		}
+	}))
+	defer server.Close()
+
+	client, _ := NewNetworkClient(NetworkClientConfig{
+		BaseURL:    server.URL,
+		APIKey:     "test-api-key",
+		MaxRetries: IntPtr(0),
+	})
+
+	_, err := client.ListNetworks(context.Background())
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected APIError, got %T", err)
+	}
+
+	if apiErr.RetryAfterHeader != "120" {
+		t.Errorf("expected RetryAfterHeader '120', got %q", apiErr.RetryAfterHeader)
+	}
+}
+
 // v2 API Tests
 
 func TestNetworkClientFirewallPolicies(t *testing.T) {

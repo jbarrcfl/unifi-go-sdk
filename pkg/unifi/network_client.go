@@ -345,7 +345,7 @@ func (c *NetworkClient) Login(ctx context.Context) error {
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
-		return c.parseErrorResponse(resp.StatusCode, respBody)
+		return c.parseErrorResponse(resp.StatusCode, respBody, resp.Header.Get("Retry-After"))
 	}
 
 	c.loggedIn = true
@@ -458,7 +458,7 @@ func (c *NetworkClient) do(ctx context.Context, method, path string, body any, r
 	if err != nil {
 		return err
 	}
-	return c.executeWithRetry(ctx, func() error {
+	return executeWithRetry(ctx, c.Logger, c.maxRetries, c.maxRetryWait, func() error {
 		return c.doOnce(ctx, method, path, bodyBytes, result)
 	})
 }
@@ -468,7 +468,7 @@ func (c *NetworkClient) doV2(ctx context.Context, method, path string, body any,
 	if err != nil {
 		return err
 	}
-	return c.executeWithRetry(ctx, func() error {
+	return executeWithRetry(ctx, c.Logger, c.maxRetries, c.maxRetryWait, func() error {
 		return c.doV2Once(ctx, method, path, bodyBytes, result)
 	})
 }
@@ -495,51 +495,8 @@ func (c *NetworkClient) prepareRequest(body any) ([]byte, error) {
 	return bodyBytes, nil
 }
 
-func (c *NetworkClient) executeWithRetry(ctx context.Context, fn func() error) error {
-	var lastErr error
-	maxAttempts := c.maxRetries + 1
 
-	for attempt := range maxAttempts {
-		lastErr = fn()
-		if lastErr == nil {
-			return nil
-		}
-
-		if !isRetryable(lastErr) {
-			return lastErr
-		}
-
-		if attempt >= maxAttempts-1 {
-			break
-		}
-
-		wait := time.Duration(0)
-		var apiErr *APIError
-		if errors.As(lastErr, &apiErr) && apiErr.StatusCode == 429 {
-			wait = parseRetryAfterHeader(apiErr.RetryAfterHeader)
-			if wait == 0 {
-				wait = parseRetryAfterBody(apiErr.Message)
-			}
-		}
-		wait = applyBackoffWithJitter(wait, attempt, c.maxRetryWait)
-
-		if c.Logger != nil {
-			c.Logger.Printf("retrying in %v (attempt %d/%d)", wait, attempt+1, c.maxRetries)
-		}
-
-		timer := time.NewTimer(wait)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return ctx.Err()
-		case <-timer.C:
-		}
-	}
-
-	return lastErr
-}
-
-func (c *NetworkClient) executeRequest(ctx context.Context, method, path string, bodyBytes []byte) ([]byte, int, error) {
+func (c *NetworkClient) executeRequest(ctx context.Context, method, path string, bodyBytes []byte) ([]byte, int, string, error) {
 	reqURL := c.BaseURL + path
 
 	var bodyReader io.Reader
@@ -549,7 +506,7 @@ func (c *NetworkClient) executeRequest(ctx context.Context, method, path string,
 
 	req, err := http.NewRequestWithContext(ctx, method, reqURL, bodyReader)
 	if err != nil {
-		return nil, 0, fmt.Errorf("creating request: %w", err)
+		return nil, 0, "", fmt.Errorf("creating request: %w", err)
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -577,7 +534,7 @@ func (c *NetworkClient) executeRequest(ctx context.Context, method, path string,
 		if c.Logger != nil {
 			c.Logger.Printf("<- error: %v", err)
 		}
-		return nil, 0, fmt.Errorf("executing request: %w", err)
+		return nil, 0, "", fmt.Errorf("executing request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -585,27 +542,29 @@ func (c *NetworkClient) executeRequest(ctx context.Context, method, path string,
 		c.Logger.Printf("<- %d %s", resp.StatusCode, resp.Status)
 	}
 
+	retryAfter := resp.Header.Get("Retry-After")
+
 	var body []byte
 	if resp.StatusCode >= 400 {
 		body, _ = io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
 	} else {
 		body, err = io.ReadAll(io.LimitReader(resp.Body, maxResponseBodySize))
 		if err != nil {
-			return nil, resp.StatusCode, fmt.Errorf("reading response body: %w", err)
+			return nil, resp.StatusCode, "", fmt.Errorf("reading response body: %w", err)
 		}
 	}
 
-	return body, resp.StatusCode, nil
+	return body, resp.StatusCode, retryAfter, nil
 }
 
 func (c *NetworkClient) doV2Once(ctx context.Context, method, path string, bodyBytes []byte, result any) error {
-	body, statusCode, err := c.executeRequest(ctx, method, path, bodyBytes)
+	body, statusCode, retryAfter, err := c.executeRequest(ctx, method, path, bodyBytes)
 	if err != nil {
 		return err
 	}
 
 	if statusCode >= 400 {
-		return c.parseErrorResponse(statusCode, body)
+		return c.parseErrorResponse(statusCode, body, retryAfter)
 	}
 
 	if result != nil {
@@ -618,13 +577,13 @@ func (c *NetworkClient) doV2Once(ctx context.Context, method, path string, bodyB
 }
 
 func (c *NetworkClient) doOnce(ctx context.Context, method, path string, bodyBytes []byte, result any) error {
-	body, statusCode, err := c.executeRequest(ctx, method, path, bodyBytes)
+	body, statusCode, retryAfter, err := c.executeRequest(ctx, method, path, bodyBytes)
 	if err != nil {
 		return err
 	}
 
 	if statusCode >= 400 {
-		return c.parseErrorResponse(statusCode, body)
+		return c.parseErrorResponse(statusCode, body, retryAfter)
 	}
 
 	var apiResp networkAPIResponse
@@ -649,11 +608,12 @@ func (c *NetworkClient) doOnce(ctx context.Context, method, path string, bodyByt
 	return nil
 }
 
-func (c *NetworkClient) parseErrorResponse(statusCode int, body []byte) error {
+func (c *NetworkClient) parseErrorResponse(statusCode int, body []byte, retryAfter string) error {
 	return &APIError{
-		StatusCode: statusCode,
-		Message:    string(body),
-		Err:        sentinelForStatusCode(statusCode),
+		StatusCode:       statusCode,
+		Message:          string(body),
+		RetryAfterHeader: retryAfter,
+		Err:              sentinelForStatusCode(statusCode),
 	}
 }
 
