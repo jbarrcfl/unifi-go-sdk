@@ -3,7 +3,6 @@
 [![CI](https://github.com/resnickio/unifi-go-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/resnickio/unifi-go-sdk/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/resnickio/unifi-go-sdk.svg)](https://pkg.go.dev/github.com/resnickio/unifi-go-sdk)
 [![Go Report Card](https://goreportcard.com/badge/github.com/resnickio/unifi-go-sdk)](https://goreportcard.com/report/github.com/resnickio/unifi-go-sdk)
-[![Known Vulnerabilities](https://snyk.io/test/github/resnickio/unifi-go-sdk/badge.svg)](https://snyk.io/test/github/resnickio/unifi-go-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Go SDK for UniFi APIs:
@@ -314,10 +313,34 @@ policy := unifi.NewFirewallPolicyBuilder().
 created, err := client.CreateFirewallPolicy(ctx, &policy)
 ```
 
-Builders provide sensible defaults (e.g., `Enabled=true`, `IPVersion=IPv4`) and support method chaining for readable configuration. Available builders:
+Builders provide sensible defaults (e.g., `Enabled=true`, `IPVersion=IPV4`) and support method chaining for readable configuration. Available builders:
 - `NewFirewallPolicyBuilder()` - Zone-based firewall policies
 - `NewPolicyEndpointBuilder()` - Source/destination endpoint configuration
 - `NewPolicyScheduleBuilder()` - Time-based scheduling with `Always()` and `Custom()` helpers
+
+### Model Validation
+
+All model structs used for Create/Update operations have a `Validate()` method that checks required fields, enum values, and format constraints before sending to the API:
+
+```go
+network := &unifi.Network{
+    Name:     "",  // required field
+    Purpose:  "invalid",
+    IPSubnet: "not-a-cidr",
+}
+
+if err := network.Validate(); err != nil {
+    // "network: name is required"
+}
+```
+
+Validation includes:
+- Required field checks
+- Enum validation (e.g., `Purpose` must be `corporate`, `guest`, `wan`, etc.)
+- IP/CIDR format validation
+- Port range validation (1-65535)
+- MAC address format validation
+- Nested struct validation (e.g., `FirewallPolicy` validates `Source`, `Destination`, `Schedule`)
 
 ### Interfaces for Mocking
 
