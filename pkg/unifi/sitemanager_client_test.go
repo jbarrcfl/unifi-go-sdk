@@ -1037,9 +1037,10 @@ func TestRetryAfterHeaderInAPIError(t *testing.T) {
 	defer server.Close()
 
 	client := newTestSiteManagerClientWithConfig(t, SiteManagerClientConfig{
-		APIKey:     "test-key",
-		BaseURL:    server.URL,
-		MaxRetries: IntPtr(1),
+		APIKey:       "test-key",
+		BaseURL:      server.URL,
+		MaxRetries:   IntPtr(1),
+		MaxRetryWait: 100 * time.Millisecond,
 	})
 
 	_, err := client.ListHosts(context.Background(), nil)
