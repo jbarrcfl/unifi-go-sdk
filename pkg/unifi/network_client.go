@@ -390,10 +390,11 @@ func (c *NetworkClient) Logout(ctx context.Context) error {
 		return nil
 	}
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	loggedIn := c.loggedIn
+	c.mu.RUnlock()
 
-	if !c.loggedIn {
+	if !loggedIn {
 		return nil
 	}
 
@@ -420,8 +421,13 @@ func (c *NetworkClient) Logout(ctx context.Context) error {
 		c.Logger.Printf("<- %d %s", resp.StatusCode, resp.Status)
 	}
 
+	c.mu.Lock()
 	c.loggedIn = false
 	c.csrfToken = ""
+	jar, _ := cookiejar.New(nil)
+	c.HTTPClient.Jar = jar
+	c.mu.Unlock()
+
 	return nil
 }
 

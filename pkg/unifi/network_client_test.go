@@ -10,6 +10,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -209,6 +210,50 @@ func TestNetworkClientAPIKeyLogoutNoop(t *testing.T) {
 
 	if logoutCalled {
 		t.Error("Logout() should be a no-op with API key auth, but logout endpoint was called")
+	}
+}
+
+func TestNetworkClientLogoutClearsCookies(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/auth/login":
+			http.SetCookie(w, &http.Cookie{Name: "session", Value: "test-session-cookie", Path: "/"})
+			w.WriteHeader(http.StatusOK)
+		case "/proxy/network/api/s/default/self":
+			w.Header().Set("X-Csrf-Token", "test-csrf-token")
+			w.WriteHeader(http.StatusOK)
+		case "/api/auth/logout":
+			w.WriteHeader(http.StatusOK)
+		}
+	}))
+	defer server.Close()
+
+	client, err := NewNetworkClient(NetworkClientConfig{
+		BaseURL:  server.URL,
+		Username: "admin",
+		Password: "password",
+	})
+	if err != nil {
+		t.Fatalf("NewNetworkClient() error = %v", err)
+	}
+
+	if err := client.Login(context.Background()); err != nil {
+		t.Fatalf("Login() error = %v", err)
+	}
+
+	u, _ := url.Parse(server.URL)
+	cookiesBefore := client.HTTPClient.Jar.Cookies(u)
+	if len(cookiesBefore) == 0 {
+		t.Fatal("expected cookies after login")
+	}
+
+	if err := client.Logout(context.Background()); err != nil {
+		t.Fatalf("Logout() error = %v", err)
+	}
+
+	cookiesAfter := client.HTTPClient.Jar.Cookies(u)
+	if len(cookiesAfter) != 0 {
+		t.Errorf("expected empty cookie jar after logout, got %d cookies", len(cookiesAfter))
 	}
 }
 
