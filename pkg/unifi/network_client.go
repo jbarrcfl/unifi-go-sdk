@@ -276,7 +276,7 @@ func NewNetworkClient(cfg NetworkClientConfig) (*NetworkClient, error) {
 		},
 	}
 
-	return &NetworkClient{
+	client := &NetworkClient{
 		BaseURL:      cfg.BaseURL,
 		Site:         site,
 		Logger:       cfg.Logger,
@@ -290,7 +290,13 @@ func NewNetworkClient(cfg NetworkClientConfig) (*NetworkClient, error) {
 			Jar:       jar,
 			Transport: transport,
 		},
-	}, nil
+	}
+
+	if cfg.InsecureSkipVerify && client.Logger != nil {
+		client.Logger.Printf("warning: TLS certificate verification disabled")
+	}
+
+	return client, nil
 }
 
 // Login authenticates with the UniFi controller using the configured credentials.
