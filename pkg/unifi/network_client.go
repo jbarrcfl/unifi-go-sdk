@@ -522,8 +522,11 @@ func (c *NetworkClient) executeRequest(ctx context.Context, method, path string,
 		c.mu.RLock()
 		csrfToken := c.csrfToken
 		c.mu.RUnlock()
-		if csrfToken != "" && (method == "POST" || method == "PUT" || method == "DELETE") {
+		isWriteOp := method == "POST" || method == "PUT" || method == "DELETE"
+		if csrfToken != "" && isWriteOp {
 			req.Header.Set("X-Csrf-Token", csrfToken)
+		} else if csrfToken == "" && isWriteOp && c.Logger != nil {
+			c.Logger.Printf("warning: making %s request without CSRF token", method)
 		}
 	}
 
