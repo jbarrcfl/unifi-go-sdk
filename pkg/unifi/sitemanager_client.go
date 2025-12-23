@@ -37,6 +37,11 @@ type SiteManagerClient struct {
 }
 
 // SiteManagerClientConfig contains configuration options for creating a SiteManagerClient.
+//
+// Note: Unlike NetworkClientConfig, InsecureSkipVerify is intentionally not supported
+// because the Site Manager API is hosted at api.ui.com with valid TLS certificates.
+// For proxy or testing scenarios, configure a custom HTTP client with the desired
+// transport settings.
 type SiteManagerClientConfig struct {
 	APIKey       string
 	BaseURL      string
