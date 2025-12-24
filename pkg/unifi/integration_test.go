@@ -284,15 +284,19 @@ func TestIntegration_Networks_CRUD(t *testing.T) {
 	vlan := 3999
 
 	network := &Network{
-		Name:         name,
-		Purpose:      "corporate",
-		VLAN:         &vlan,
-		VLANEnabled:  BoolPtr(true),
-		IPSubnet:     "10.199.99.1/24",
-		DHCPDEnabled: BoolPtr(true),
-		DHCPDStart:   "10.199.99.100",
-		DHCPDStop:    "10.199.99.200",
-		Enabled:      BoolPtr(true),
+		Name:    name,
+		Purpose: "corporate",
+		Enabled: BoolPtr(true),
+		NetworkVLAN: NetworkVLAN{
+			VLAN:        &vlan,
+			VLANEnabled: BoolPtr(true),
+			IPSubnet:    "10.199.99.1/24",
+		},
+		NetworkDHCP: NetworkDHCP{
+			DHCPDEnabled: BoolPtr(true),
+			DHCPDStart:   "10.199.99.100",
+			DHCPDStop:    "10.199.99.200",
+		},
 	}
 
 	created, err := client.CreateNetwork(ctx, network)
@@ -418,24 +422,19 @@ func TestIntegration_FirewallRules_CRUD(t *testing.T) {
 
 	name := testName("fwrule")
 	rule := &FirewallRule{
-		Name:                  name,
-		Enabled:               BoolPtr(true),
-		Ruleset:               "WAN_LOCAL",
-		RuleIndex:             IntPtr(4000),
-		Action:                "drop",
-		Protocol:              "tcp",
-		ProtocolMatchExcepted: BoolPtr(false),
-		SrcFirewallGroupIDs:   []string{},
-		SrcAddress:            "",
-		SrcNetworkConfType:    "NETv4",
-		DstFirewallGroupIDs:   []string{},
-		DstAddress:            "",
-		DstNetworkConfType:    "NETv4",
-		DstPort:               "22",
+		Name:     name,
+		Enabled:  BoolPtr(true),
+		Ruleset:  "WAN_LOCAL",
+		Action:   "drop",
+		Protocol: "tcp",
+		DstPort:  "22",
 	}
 
 	created, err := client.CreateFirewallRule(ctx, rule)
 	if err != nil {
+		if strings.Contains(err.Error(), "FirewallRuleFieldsRequired") {
+			t.Skip("Legacy firewall rules not supported (zone-based firewall controller)")
+		}
 		t.Fatalf("CreateFirewallRule failed: %v", err)
 	}
 	if created.ID == "" {
@@ -822,6 +821,14 @@ func TestIntegration_WLANs_CRUD(t *testing.T) {
 	}
 	networkID := networks[0].ID
 
+	apGroups, err := client.ListAPGroups(ctx)
+	if err != nil {
+		t.Fatalf("ListAPGroups failed: %v", err)
+	}
+	if len(apGroups) == 0 {
+		t.Skip("No AP groups available for WLAN")
+	}
+
 	name := testName("wlan")
 	wlan := &WLANConf{
 		Name:          name,
@@ -831,6 +838,7 @@ func TestIntegration_WLANs_CRUD(t *testing.T) {
 		XPassphrase:   "testwlanpassword123",
 		NetworkConfID: networkID,
 		HideSsid:      BoolPtr(false),
+		APGroupIDs:    []string{apGroups[0].ID},
 	}
 
 	created, err := client.CreateWLAN(ctx, wlan)
@@ -864,7 +872,7 @@ func TestIntegration_WLANs_CRUD(t *testing.T) {
 		t.Error("Created WLAN not found in list")
 	}
 
-	newName := testName("wlan_updated")
+	newName := testName("wlan_upd")
 	fetched.Name = newName
 	updated, err := client.UpdateWLAN(ctx, fetched.ID, fetched)
 	if err != nil {
@@ -1037,9 +1045,12 @@ func TestIntegration_V2_FirewallPolicies_CRUD(t *testing.T) {
 
 	name := testName("policy")
 	policy := &FirewallPolicy{
-		Name:    name,
-		Enabled: BoolPtr(true),
-		Action:  "BLOCK",
+		Name:               name,
+		Enabled:            BoolPtr(true),
+		Action:             "BLOCK",
+		IPVersion:          "IPV4",
+		Schedule:           &PolicySchedule{Mode: "ALWAYS"},
+		CreateAllowRespond: BoolPtr(false),
 		Source: &PolicyEndpoint{
 			ZoneID:         zones[0].ID,
 			MatchingTarget: "ANY",
@@ -1453,8 +1464,10 @@ func TestIntegration_ErrorHandling(t *testing.T) {
 
 	t.Run("CreateInvalid", func(t *testing.T) {
 		network := &Network{
-			Name:     "",
-			IPSubnet: "invalid-subnet",
+			Name: "",
+			NetworkVLAN: NetworkVLAN{
+				IPSubnet: "invalid-subnet",
+			},
 		}
 		_, err := client.CreateNetwork(ctx, network)
 		if err == nil {

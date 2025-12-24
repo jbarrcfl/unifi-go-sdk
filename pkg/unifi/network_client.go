@@ -124,6 +124,9 @@ type NetworkManager interface {
 	// v2 API - Devices (read-only)
 	ListDevices(ctx context.Context) (*DeviceList, error)
 
+	// v2 API - AP Groups (read-only)
+	ListAPGroups(ctx context.Context) ([]APGroup, error)
+
 	// v2 API - Traffic Rules
 	ListTrafficRules(ctx context.Context) ([]TrafficRule, error)
 	GetTrafficRule(ctx context.Context, id string) (*TrafficRule, error)
@@ -1428,6 +1431,15 @@ func (c *NetworkClient) ListDevices(ctx context.Context) (*DeviceList, error) {
 		return nil, err
 	}
 	return &devices, nil
+}
+
+func (c *NetworkClient) ListAPGroups(ctx context.Context) ([]APGroup, error) {
+	var groups []APGroup
+	err := c.doV2(ctx, "GET", c.v2Path("apgroups"), nil, &groups)
+	if err != nil {
+		return nil, err
+	}
+	return groups, nil
 }
 
 // TrafficRule CRUD operations (v2 API)

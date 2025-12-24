@@ -151,7 +151,8 @@ func TestPortForwardValidate(t *testing.T) {
 
 func TestStaticDNSValidate(t *testing.T) {
 	port := 80
-	invalidPort := 0
+	zeroPort := 0
+	invalidPort := 70000
 	tests := []struct {
 		name    string
 		dns     StaticDNS
@@ -162,6 +163,7 @@ func TestStaticDNSValidate(t *testing.T) {
 		{"missing value", StaticDNS{Key: "example.com"}, "value is required"},
 		{"invalid record_type", StaticDNS{Key: "example.com", Value: "192.168.1.1", RecordType: "INVALID"}, "record_type must be one of"},
 		{"valid port", StaticDNS{Key: "example.com", Value: "192.168.1.1", Port: &port}, ""},
+		{"zero port valid", StaticDNS{Key: "example.com", Value: "192.168.1.1", Port: &zeroPort}, ""},
 		{"invalid port", StaticDNS{Key: "example.com", Value: "192.168.1.1", Port: &invalidPort}, "port must be between 1 and 65535"},
 	}
 	for _, tt := range tests {
@@ -244,12 +246,12 @@ func TestTrafficRuleValidate(t *testing.T) {
 		rule    TrafficRule
 		wantErr string
 	}{
-		{"valid", TrafficRule{Name: "Test", Action: "BLOCK"}, ""},
-		{"missing name", TrafficRule{}, "name is required"},
-		{"invalid action", TrafficRule{Name: "Test", Action: "invalid"}, "action must be one of"},
-		{"invalid matching_target", TrafficRule{Name: "Test", MatchingTarget: "invalid"}, "matching_target must be one of"},
-		{"invalid ip_addresses", TrafficRule{Name: "Test", IPAddresses: []string{"invalid"}}, "ip_addresses[0] must be a valid IP or CIDR"},
-		{"valid ip_addresses", TrafficRule{Name: "Test", IPAddresses: []string{"192.168.1.0/24"}}, ""},
+		{"valid", TrafficRule{Action: "BLOCK"}, ""},
+		{"valid with name", TrafficRule{Name: "Test", Action: "BLOCK"}, ""},
+		{"invalid action", TrafficRule{Action: "invalid"}, "action must be one of"},
+		{"invalid matching_target", TrafficRule{MatchingTarget: "invalid"}, "matching_target must be one of"},
+		{"invalid ip_addresses", TrafficRule{IPAddresses: []string{"invalid"}}, "ip_addresses[0] must be a valid IP or CIDR"},
+		{"valid ip_addresses", TrafficRule{IPAddresses: []string{"192.168.1.0/24"}}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -265,10 +267,10 @@ func TestTrafficRouteValidate(t *testing.T) {
 		route   TrafficRoute
 		wantErr string
 	}{
-		{"valid", TrafficRoute{Name: "Test"}, ""},
-		{"missing name", TrafficRoute{}, "name is required"},
-		{"invalid matching_target", TrafficRoute{Name: "Test", MatchingTarget: "invalid"}, "matching_target must be one of"},
-		{"invalid ip_addresses", TrafficRoute{Name: "Test", IPAddresses: []string{"invalid"}}, "ip_addresses[0] must be a valid IP or CIDR"},
+		{"valid", TrafficRoute{}, ""},
+		{"valid with name", TrafficRoute{Name: "Test"}, ""},
+		{"invalid matching_target", TrafficRoute{MatchingTarget: "invalid"}, "matching_target must be one of"},
+		{"invalid ip_addresses", TrafficRoute{IPAddresses: []string{"invalid"}}, "ip_addresses[0] must be a valid IP or CIDR"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

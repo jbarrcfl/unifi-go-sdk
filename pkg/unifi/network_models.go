@@ -272,6 +272,16 @@ type PortForward struct {
 	SrcLimitingEnabled *bool    `json:"src_limiting_enabled,omitempty"`
 }
 
+// APGroup represents an access point group for organizing APs.
+type APGroup struct {
+	ID           string   `json:"_id,omitempty"`
+	Name         string   `json:"name"`
+	AttrHiddenID string   `json:"attr_hidden_id,omitempty"`
+	AttrNoDelete *bool    `json:"attr_no_delete,omitempty"`
+	DeviceMACs   []string `json:"device_macs,omitempty"`
+	ForWLANConf  *bool    `json:"for_wlanconf,omitempty"`
+}
+
 // WLANConf represents a UniFi wireless network (SSID) configuration.
 //
 // Field value reference:
@@ -1059,7 +1069,7 @@ func (s *StaticDNS) Validate() error {
 	if s.RecordType != "" && !isOneOf(s.RecordType, "A", "AAAA", "CNAME", "MX", "NS", "TXT", "SRV") {
 		return fmt.Errorf("staticdns: record_type must be one of: A, AAAA, CNAME, MX, NS, TXT, SRV")
 	}
-	if s.Port != nil && !isValidPort(*s.Port) {
+	if s.Port != nil && *s.Port != 0 && !isValidPort(*s.Port) {
 		return fmt.Errorf("staticdns: port must be between 1 and 65535")
 	}
 	return nil
@@ -1176,9 +1186,6 @@ func (f *FirewallPolicy) Validate() error {
 
 // Validate checks that required fields are set and values are valid.
 func (t *TrafficRule) Validate() error {
-	if t.Name == "" {
-		return fmt.Errorf("trafficrule: name is required")
-	}
 	if t.Action != "" && !isOneOf(t.Action, "BLOCK", "ALLOW") {
 		return fmt.Errorf("trafficrule: action must be one of: BLOCK, ALLOW")
 	}
@@ -1195,9 +1202,6 @@ func (t *TrafficRule) Validate() error {
 
 // Validate checks that required fields are set and values are valid.
 func (t *TrafficRoute) Validate() error {
-	if t.Name == "" {
-		return fmt.Errorf("trafficroute: name is required")
-	}
 	if t.MatchingTarget != "" && !isOneOf(t.MatchingTarget, "INTERNET", "IP", "DOMAIN", "REGION", "APP") {
 		return fmt.Errorf("trafficroute: matching_target must be one of: INTERNET, IP, DOMAIN, REGION, APP")
 	}

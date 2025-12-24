@@ -211,6 +211,7 @@ Both APIs complete:
 - NAT Rules: `ListNatRules`, `GetNatRule`, `CreateNatRule`, `UpdateNatRule`, `DeleteNatRule`
 - Active Clients: `ListActiveClients` (read-only)
 - Devices: `ListDevices` (read-only)
+- AP Groups: `ListAPGroups` (read-only)
 - ACL Rules: `ListAclRules` (read-only)
 - QoS Rules: `ListQosRules` (read-only)
 - Content Filtering: `GetContentFiltering` (read-only)
