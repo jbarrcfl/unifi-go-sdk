@@ -386,11 +386,11 @@ func TestNetworkClientLoginFailure(t *testing.T) {
 
 func TestNetworkClientLoginFailureScenarios(t *testing.T) {
 	tests := []struct {
-		name           string
-		statusCode     int
-		responseBody   string
-		expectedErr    error
-		checkSentinel  bool
+		name          string
+		statusCode    int
+		responseBody  string
+		expectedErr   error
+		checkSentinel bool
 	}{
 		{
 			name:          "forbidden",
@@ -1434,11 +1434,11 @@ func TestNetworkClientRoutes(t *testing.T) {
 					"meta": map[string]string{"rc": "ok"},
 					"data": []map[string]any{
 						{
-							"_id":                    "route1",
-							"name":                   "To VPN",
-							"enabled":                true,
-							"static-route_network":   "10.0.0.0/24",
-							"static-route_nexthop":   "192.168.1.254",
+							"_id":                  "route1",
+							"name":                 "To VPN",
+							"enabled":              true,
+							"static-route_network": "10.0.0.0/24",
+							"static-route_nexthop": "192.168.1.254",
 						},
 					},
 				}
@@ -4007,6 +4007,81 @@ func TestNetworkClient405Fallback(t *testing.T) {
 			t.Errorf("expected ID 'route2', got '%s'", route.ID)
 		}
 	})
+
+	t.Run("FirewallZone_FallbackSuccess", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/auth/login":
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/self":
+				w.Header().Set("X-Csrf-Token", "test-token")
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/v2/api/site/default/firewall/zone":
+				response := []map[string]any{
+					{"_id": "zone1", "name": "Internal", "zone_key": "internal"},
+					{"_id": "zone2", "name": "External", "zone_key": "external"},
+				}
+				json.NewEncoder(w).Encode(response)
+			case "/proxy/network/v2/api/site/default/firewall/zone/zone2":
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := NewNetworkClient(NetworkClientConfig{
+			BaseURL:  server.URL,
+			Username: "admin",
+			Password: "password",
+		})
+		client.Login(context.Background())
+
+		zone, err := client.GetFirewallZone(context.Background(), "zone2")
+		if err != nil {
+			t.Fatalf("GetFirewallZone() error = %v, expected fallback to List", err)
+		}
+		if zone.ID != "zone2" {
+			t.Errorf("expected ID 'zone2', got '%s'", zone.ID)
+		}
+		if zone.Name != "External" {
+			t.Errorf("expected Name 'External', got '%s'", zone.Name)
+		}
+	})
+
+	t.Run("FirewallZone_FallbackNotFound", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/auth/login":
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/self":
+				w.Header().Set("X-Csrf-Token", "test-token")
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/v2/api/site/default/firewall/zone":
+				response := []map[string]any{
+					{"_id": "zone1", "name": "Internal"},
+				}
+				json.NewEncoder(w).Encode(response)
+			case "/proxy/network/v2/api/site/default/firewall/zone/nonexistent":
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := NewNetworkClient(NetworkClientConfig{
+			BaseURL:  server.URL,
+			Username: "admin",
+			Password: "password",
+		})
+		client.Login(context.Background())
+
+		_, err := client.GetFirewallZone(context.Background(), "nonexistent")
+		if !errors.Is(err, ErrNotFound) {
+			t.Errorf("expected ErrNotFound, got %v", err)
+		}
+	})
 }
 
 func TestNetworkClientListAPGroups(t *testing.T) {
@@ -4018,10 +4093,10 @@ func TestNetworkClientListAPGroups(t *testing.T) {
 			case "/proxy/network/v2/api/site/default/apgroups":
 				response := []map[string]any{
 					{
-						"_id":           "group1",
-						"name":          "Default",
+						"_id":            "group1",
+						"name":           "Default",
 						"attr_no_delete": true,
-						"device_macs":   []string{"00:11:22:33:44:55"},
+						"device_macs":    []string{"00:11:22:33:44:55"},
 					},
 					{
 						"_id":         "group2",

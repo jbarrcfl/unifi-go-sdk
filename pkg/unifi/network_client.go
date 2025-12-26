@@ -506,7 +506,6 @@ func (c *NetworkClient) prepareRequest(body any) ([]byte, error) {
 	return bodyBytes, nil
 }
 
-
 func (c *NetworkClient) executeRequest(ctx context.Context, method, path string, bodyBytes []byte) ([]byte, int, string, error) {
 	reqURL := c.BaseURL + path
 
@@ -1301,16 +1300,35 @@ func (c *NetworkClient) ListFirewallZones(ctx context.Context) ([]FirewallZone, 
 	return zones, nil
 }
 
+// GetFirewallZone retrieves a firewall zone by ID.
+// Some controller versions don't support GET by ID (return 405 Method Not Allowed),
+// so this method falls back to listing all zones and filtering by ID.
 func (c *NetworkClient) GetFirewallZone(ctx context.Context, id string) (*FirewallZone, error) {
 	var zone FirewallZone
 	err := c.doV2(ctx, "GET", c.v2PathWithID("firewall/zone", id), nil, &zone)
 	if err != nil {
+		if errors.Is(err, ErrMethodNotAllowed) {
+			return c.getFirewallZoneByList(ctx, id)
+		}
 		return nil, err
 	}
 	if zone.ID == "" {
 		return nil, ErrNotFound
 	}
 	return &zone, nil
+}
+
+func (c *NetworkClient) getFirewallZoneByList(ctx context.Context, id string) (*FirewallZone, error) {
+	zones, err := c.ListFirewallZones(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for i := range zones {
+		if zones[i].ID == id {
+			return &zones[i], nil
+		}
+	}
+	return nil, ErrNotFound
 }
 
 func (c *NetworkClient) CreateFirewallZone(ctx context.Context, zone *FirewallZone) (*FirewallZone, error) {

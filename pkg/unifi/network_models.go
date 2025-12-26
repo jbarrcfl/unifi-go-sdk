@@ -207,35 +207,35 @@ type Network struct {
 //   - IPSec: "match-ipsec", "match-none", ""
 //   - SrcNetworkConfType/DstNetworkConfType: "ADDRv4", "NETv4"
 type FirewallRule struct {
-	ID                  string   `json:"_id,omitempty"`
-	SiteID              string   `json:"site_id,omitempty"`
-	Name                string   `json:"name"`
-	Enabled             *bool    `json:"enabled,omitempty"`
-	RuleIndex           *int     `json:"rule_index,omitempty"`
-	Ruleset             string   `json:"ruleset,omitempty"`
-	Action              string   `json:"action,omitempty"`
-	Protocol            string   `json:"protocol,omitempty"`
-	ProtocolMatchExcepted *bool  `json:"protocol_match_excepted,omitempty"`
-	ProtocolV6          string   `json:"protocol_v6,omitempty"`
-	ICMPTypename        string   `json:"icmp_typename,omitempty"`
-	ICMPv6Typename      string   `json:"icmp_v6_typename,omitempty"`
-	Logging             *bool    `json:"logging,omitempty"`
-	StateEstablished    *bool    `json:"state_established,omitempty"`
-	StateInvalid        *bool    `json:"state_invalid,omitempty"`
-	StateNew            *bool    `json:"state_new,omitempty"`
-	StateRelated        *bool    `json:"state_related,omitempty"`
-	IPSec               string   `json:"ipsec,omitempty"`
-	SrcFirewallGroupIDs []string `json:"src_firewallgroup_ids,omitempty"`
-	SrcMACAddress       string   `json:"src_mac_address,omitempty"`
-	SrcAddress          string   `json:"src_address,omitempty"`
-	SrcNetworkConfID    string   `json:"src_networkconf_id,omitempty"`
-	SrcNetworkConfType  string   `json:"src_networkconf_type,omitempty"`
-	SrcPort             string   `json:"src_port,omitempty"`
-	DstFirewallGroupIDs []string `json:"dst_firewallgroup_ids,omitempty"`
-	DstAddress          string   `json:"dst_address,omitempty"`
-	DstNetworkConfID    string   `json:"dst_networkconf_id,omitempty"`
-	DstNetworkConfType  string   `json:"dst_networkconf_type,omitempty"`
-	DstPort             string   `json:"dst_port,omitempty"`
+	ID                    string   `json:"_id,omitempty"`
+	SiteID                string   `json:"site_id,omitempty"`
+	Name                  string   `json:"name"`
+	Enabled               *bool    `json:"enabled,omitempty"`
+	RuleIndex             *int     `json:"rule_index,omitempty"`
+	Ruleset               string   `json:"ruleset,omitempty"`
+	Action                string   `json:"action,omitempty"`
+	Protocol              string   `json:"protocol,omitempty"`
+	ProtocolMatchExcepted *bool    `json:"protocol_match_excepted,omitempty"`
+	ProtocolV6            string   `json:"protocol_v6,omitempty"`
+	ICMPTypename          string   `json:"icmp_typename,omitempty"`
+	ICMPv6Typename        string   `json:"icmp_v6_typename,omitempty"`
+	Logging               *bool    `json:"logging,omitempty"`
+	StateEstablished      *bool    `json:"state_established,omitempty"`
+	StateInvalid          *bool    `json:"state_invalid,omitempty"`
+	StateNew              *bool    `json:"state_new,omitempty"`
+	StateRelated          *bool    `json:"state_related,omitempty"`
+	IPSec                 string   `json:"ipsec,omitempty"`
+	SrcFirewallGroupIDs   []string `json:"src_firewallgroup_ids,omitempty"`
+	SrcMACAddress         string   `json:"src_mac_address,omitempty"`
+	SrcAddress            string   `json:"src_address,omitempty"`
+	SrcNetworkConfID      string   `json:"src_networkconf_id,omitempty"`
+	SrcNetworkConfType    string   `json:"src_networkconf_type,omitempty"`
+	SrcPort               string   `json:"src_port,omitempty"`
+	DstFirewallGroupIDs   []string `json:"dst_firewallgroup_ids,omitempty"`
+	DstAddress            string   `json:"dst_address,omitempty"`
+	DstNetworkConfID      string   `json:"dst_networkconf_id,omitempty"`
+	DstNetworkConfType    string   `json:"dst_networkconf_type,omitempty"`
+	DstPort               string   `json:"dst_port,omitempty"`
 }
 
 // FirewallGroup represents a UniFi firewall group (IP group, port group, or IPv6 group).
@@ -243,10 +243,10 @@ type FirewallRule struct {
 // Field value reference:
 //   - GroupType: "address-group", "port-group", "ipv6-address-group"
 type FirewallGroup struct {
-	ID          string   `json:"_id,omitempty"`
-	SiteID      string   `json:"site_id,omitempty"`
-	Name        string   `json:"name"`
-	GroupType   string   `json:"group_type,omitempty"`
+	ID           string   `json:"_id,omitempty"`
+	SiteID       string   `json:"site_id,omitempty"`
+	Name         string   `json:"name"`
+	GroupType    string   `json:"group_type,omitempty"`
 	GroupMembers []string `json:"group_members,omitempty"`
 }
 
@@ -294,67 +294,67 @@ type APGroup struct {
 //   - DtimMode: "default", "custom"
 //   - APGroupMode: "all", "groups"
 type WLANConf struct {
-	ID                       string   `json:"_id,omitempty"`
-	SiteID                   string   `json:"site_id,omitempty"`
-	Name                     string   `json:"name"`
-	Enabled                  *bool    `json:"enabled,omitempty"`
-	Security                 string   `json:"security,omitempty"`
-	WPAMode                  string   `json:"wpa_mode,omitempty"`
-	WPAEnc                   string   `json:"wpa_enc,omitempty"`
-	WPA3Support              *bool    `json:"wpa3_support,omitempty"`
-	WPA3Transition           *bool    `json:"wpa3_transition,omitempty"`
-	WPA3Enhanced192          *bool    `json:"wpa3_enhanced_192,omitempty"`
-	WPA3FastRoaming          *bool    `json:"wpa3_fast_roaming,omitempty"`
-	XPassphrase              string   `json:"x_passphrase,omitempty"`
-	XIappKey                 string   `json:"x_iapp_key,omitempty"`
-	PassphraseAutogenerated  *bool    `json:"passphrase_autogenerated,omitempty"`
-	PrivatePresharedKeys     []json.RawMessage `json:"private_preshared_keys,omitempty"`
-	PrivatePresharedKeysEnabled *bool `json:"private_preshared_keys_enabled,omitempty"`
-	NetworkConfID            string   `json:"networkconf_id,omitempty"`
-	Usergroup                string   `json:"usergroup_id,omitempty"`
-	IsGuest                  *bool    `json:"is_guest,omitempty"`
-	HideSsid                 *bool    `json:"hide_ssid,omitempty"`
-	WLANBand                 string   `json:"wlan_band,omitempty"`
-	WLANBands                []string `json:"wlan_bands,omitempty"`
-	APGroupIDs               []string `json:"ap_group_ids,omitempty"`
-	APGroupMode              string   `json:"ap_group_mode,omitempty"`
-	Vlan                     *int     `json:"vlan,omitempty"`
-	VlanEnabled              *bool    `json:"vlan_enabled,omitempty"`
-	MacFilterEnabled         *bool    `json:"mac_filter_enabled,omitempty"`
-	MacFilterList            []string `json:"mac_filter_list,omitempty"`
-	MacFilterPolicy          string   `json:"mac_filter_policy,omitempty"`
-	RadiusProfileID          string   `json:"radiusprofile_id,omitempty"`
-	RadiusDasEnabled         *bool    `json:"radius_das_enabled,omitempty"`
-	RadiusMacAuthEnabled     *bool    `json:"radius_mac_auth_enabled,omitempty"`
-	RadiusMacaclFormat       string   `json:"radius_macacl_format,omitempty"`
-	ScheduleEnabled          *bool    `json:"schedule_enabled,omitempty"`
-	Schedule                 []string `json:"schedule,omitempty"`
-	ScheduleWithDuration     []json.RawMessage `json:"schedule_with_duration,omitempty"`
-	SettingPreference        string   `json:"setting_preference,omitempty"`
-	MinrateNgEnabled         *bool    `json:"minrate_ng_enabled,omitempty"`
-	MinrateNgDataRateKbps    *int     `json:"minrate_ng_data_rate_kbps,omitempty"`
-	MinrateNgAdvertisingRates *bool   `json:"minrate_ng_advertising_rates,omitempty"`
-	MinrateNaEnabled         *bool    `json:"minrate_na_enabled,omitempty"`
-	MinrateNaDataRateKbps    *int     `json:"minrate_na_data_rate_kbps,omitempty"`
-	MinrateNaAdvertisingRates *bool   `json:"minrate_na_advertising_rates,omitempty"`
-	MinrateSettingPreference string   `json:"minrate_setting_preference,omitempty"`
-	No2GhzOui                *bool    `json:"no2ghz_oui,omitempty"`
-	NoIPv6Ndp                *bool    `json:"no_ipv6_ndp,omitempty"`
-	OptimizeIotWifiConn      *bool    `json:"optimize_iot_wifi_connectivity,omitempty"`
-	PmfMode                  string   `json:"pmf_mode,omitempty"`
-	BcastEnhanceEnabled      *bool    `json:"bcastenhance_enabled,omitempty"`
-	McastEnhanceEnabled      *bool    `json:"mcastenhance_enabled,omitempty"`
-	GroupRekey               *int     `json:"group_rekey,omitempty"`
-	DtimMode                 string   `json:"dtim_mode,omitempty"`
-	DtimNa                   *int     `json:"dtim_na,omitempty"`
-	DtimNg                   *int     `json:"dtim_ng,omitempty"`
-	Dtim6e                   *int     `json:"dtim_6e,omitempty"`
-	Uapsd                    *bool    `json:"uapsd_enabled,omitempty"`
-	FastRoamingEnabled       *bool    `json:"fast_roaming_enabled,omitempty"`
-	ProxyArp                 *bool    `json:"proxy_arp,omitempty"`
-	BssTransition            *bool    `json:"bss_transition,omitempty"`
-	L2Isolation              *bool    `json:"l2_isolation,omitempty"`
-	IappEnabled              *bool    `json:"iapp_enabled,omitempty"`
+	ID                          string            `json:"_id,omitempty"`
+	SiteID                      string            `json:"site_id,omitempty"`
+	Name                        string            `json:"name"`
+	Enabled                     *bool             `json:"enabled,omitempty"`
+	Security                    string            `json:"security,omitempty"`
+	WPAMode                     string            `json:"wpa_mode,omitempty"`
+	WPAEnc                      string            `json:"wpa_enc,omitempty"`
+	WPA3Support                 *bool             `json:"wpa3_support,omitempty"`
+	WPA3Transition              *bool             `json:"wpa3_transition,omitempty"`
+	WPA3Enhanced192             *bool             `json:"wpa3_enhanced_192,omitempty"`
+	WPA3FastRoaming             *bool             `json:"wpa3_fast_roaming,omitempty"`
+	XPassphrase                 string            `json:"x_passphrase,omitempty"`
+	XIappKey                    string            `json:"x_iapp_key,omitempty"`
+	PassphraseAutogenerated     *bool             `json:"passphrase_autogenerated,omitempty"`
+	PrivatePresharedKeys        []json.RawMessage `json:"private_preshared_keys,omitempty"`
+	PrivatePresharedKeysEnabled *bool             `json:"private_preshared_keys_enabled,omitempty"`
+	NetworkConfID               string            `json:"networkconf_id,omitempty"`
+	Usergroup                   string            `json:"usergroup_id,omitempty"`
+	IsGuest                     *bool             `json:"is_guest,omitempty"`
+	HideSsid                    *bool             `json:"hide_ssid,omitempty"`
+	WLANBand                    string            `json:"wlan_band,omitempty"`
+	WLANBands                   []string          `json:"wlan_bands,omitempty"`
+	APGroupIDs                  []string          `json:"ap_group_ids,omitempty"`
+	APGroupMode                 string            `json:"ap_group_mode,omitempty"`
+	Vlan                        *int              `json:"vlan,omitempty"`
+	VlanEnabled                 *bool             `json:"vlan_enabled,omitempty"`
+	MacFilterEnabled            *bool             `json:"mac_filter_enabled,omitempty"`
+	MacFilterList               []string          `json:"mac_filter_list,omitempty"`
+	MacFilterPolicy             string            `json:"mac_filter_policy,omitempty"`
+	RadiusProfileID             string            `json:"radiusprofile_id,omitempty"`
+	RadiusDasEnabled            *bool             `json:"radius_das_enabled,omitempty"`
+	RadiusMacAuthEnabled        *bool             `json:"radius_mac_auth_enabled,omitempty"`
+	RadiusMacaclFormat          string            `json:"radius_macacl_format,omitempty"`
+	ScheduleEnabled             *bool             `json:"schedule_enabled,omitempty"`
+	Schedule                    []string          `json:"schedule,omitempty"`
+	ScheduleWithDuration        []json.RawMessage `json:"schedule_with_duration,omitempty"`
+	SettingPreference           string            `json:"setting_preference,omitempty"`
+	MinrateNgEnabled            *bool             `json:"minrate_ng_enabled,omitempty"`
+	MinrateNgDataRateKbps       *int              `json:"minrate_ng_data_rate_kbps,omitempty"`
+	MinrateNgAdvertisingRates   *bool             `json:"minrate_ng_advertising_rates,omitempty"`
+	MinrateNaEnabled            *bool             `json:"minrate_na_enabled,omitempty"`
+	MinrateNaDataRateKbps       *int              `json:"minrate_na_data_rate_kbps,omitempty"`
+	MinrateNaAdvertisingRates   *bool             `json:"minrate_na_advertising_rates,omitempty"`
+	MinrateSettingPreference    string            `json:"minrate_setting_preference,omitempty"`
+	No2GhzOui                   *bool             `json:"no2ghz_oui,omitempty"`
+	NoIPv6Ndp                   *bool             `json:"no_ipv6_ndp,omitempty"`
+	OptimizeIotWifiConn         *bool             `json:"optimize_iot_wifi_connectivity,omitempty"`
+	PmfMode                     string            `json:"pmf_mode,omitempty"`
+	BcastEnhanceEnabled         *bool             `json:"bcastenhance_enabled,omitempty"`
+	McastEnhanceEnabled         *bool             `json:"mcastenhance_enabled,omitempty"`
+	GroupRekey                  *int              `json:"group_rekey,omitempty"`
+	DtimMode                    string            `json:"dtim_mode,omitempty"`
+	DtimNa                      *int              `json:"dtim_na,omitempty"`
+	DtimNg                      *int              `json:"dtim_ng,omitempty"`
+	Dtim6e                      *int              `json:"dtim_6e,omitempty"`
+	Uapsd                       *bool             `json:"uapsd_enabled,omitempty"`
+	FastRoamingEnabled          *bool             `json:"fast_roaming_enabled,omitempty"`
+	ProxyArp                    *bool             `json:"proxy_arp,omitempty"`
+	BssTransition               *bool             `json:"bss_transition,omitempty"`
+	L2Isolation                 *bool             `json:"l2_isolation,omitempty"`
+	IappEnabled                 *bool             `json:"iapp_enabled,omitempty"`
 }
 
 // PortConf represents a UniFi switch port profile.
@@ -366,39 +366,39 @@ type WLANConf struct {
 //   - PoeMode: "auto", "pasv24", "passthrough", "off"
 //   - SettingPreference: "auto", "manual"
 type PortConf struct {
-	ID                          string   `json:"_id,omitempty"`
-	SiteID                      string   `json:"site_id,omitempty"`
-	Name                        string   `json:"name"`
-	Forward                     string   `json:"forward,omitempty"`
-	NativeNetworkconfID         string   `json:"native_networkconf_id,omitempty"`
-	TaggedNetworkconfIDs        []string `json:"tagged_networkconf_ids,omitempty"`
-	VoiceNetworkconfID          string   `json:"voice_networkconf_id,omitempty"`
-	Autoneg                     *bool    `json:"autoneg,omitempty"`
-	Dot1xCtrl                   string   `json:"dot1x_ctrl,omitempty"`
-	Dot1xIDleTimeout            *int     `json:"dot1x_idle_timeout,omitempty"`
-	EgressRateLimitKbps         *int     `json:"egress_rate_limit_kbps,omitempty"`
-	EgressRateLimitEnabled      *bool    `json:"egress_rate_limit_kbps_enabled,omitempty"`
-	FullDuplex                  *bool    `json:"full_duplex,omitempty"`
-	Isolation                   *bool    `json:"isolation,omitempty"`
-	LldpmedEnabled              *bool    `json:"lldpmed_enabled,omitempty"`
-	LldpmedNotifyEnabled        *bool    `json:"lldpmed_notify_enabled,omitempty"`
-	MulticastRouterNetworkconfIDs []string `json:"multicast_router_networkconf_ids,omitempty"`
-	OpMode                      string   `json:"op_mode,omitempty"`
-	PoeMode                     string   `json:"poe_mode,omitempty"`
-	PortKeepaliveEnabled        *bool    `json:"port_keepalive_enabled,omitempty"`
-	PortSecurityEnabled         *bool    `json:"port_security_enabled,omitempty"`
-	PortSecurityMacAddress      []string `json:"port_security_mac_address,omitempty"`
-	QosProfile                  *QoSProfile `json:"qos_profile,omitempty"`
-	SettingPreference           string   `json:"setting_preference,omitempty"`
-	Speed                       *int     `json:"speed,omitempty"`
-	StormctrlBcastEnabled       *bool    `json:"stormctrl_bcast_enabled,omitempty"`
-	StormctrlBcastRate          *int     `json:"stormctrl_bcast_rate,omitempty"`
-	StormctrlMcastEnabled       *bool    `json:"stormctrl_mcast_enabled,omitempty"`
-	StormctrlMcastRate          *int     `json:"stormctrl_mcast_rate,omitempty"`
-	StormctrlUcastEnabled       *bool    `json:"stormctrl_ucast_enabled,omitempty"`
-	StormctrlUcastRate          *int     `json:"stormctrl_ucast_rate,omitempty"`
-	StpPortMode                 *bool    `json:"stp_port_mode,omitempty"`
-	TaggedVlanMgmt              string   `json:"tagged_vlan_mgmt,omitempty"`
+	ID                            string      `json:"_id,omitempty"`
+	SiteID                        string      `json:"site_id,omitempty"`
+	Name                          string      `json:"name"`
+	Forward                       string      `json:"forward,omitempty"`
+	NativeNetworkconfID           string      `json:"native_networkconf_id,omitempty"`
+	TaggedNetworkconfIDs          []string    `json:"tagged_networkconf_ids,omitempty"`
+	VoiceNetworkconfID            string      `json:"voice_networkconf_id,omitempty"`
+	Autoneg                       *bool       `json:"autoneg,omitempty"`
+	Dot1xCtrl                     string      `json:"dot1x_ctrl,omitempty"`
+	Dot1xIDleTimeout              *int        `json:"dot1x_idle_timeout,omitempty"`
+	EgressRateLimitKbps           *int        `json:"egress_rate_limit_kbps,omitempty"`
+	EgressRateLimitEnabled        *bool       `json:"egress_rate_limit_kbps_enabled,omitempty"`
+	FullDuplex                    *bool       `json:"full_duplex,omitempty"`
+	Isolation                     *bool       `json:"isolation,omitempty"`
+	LldpmedEnabled                *bool       `json:"lldpmed_enabled,omitempty"`
+	LldpmedNotifyEnabled          *bool       `json:"lldpmed_notify_enabled,omitempty"`
+	MulticastRouterNetworkconfIDs []string    `json:"multicast_router_networkconf_ids,omitempty"`
+	OpMode                        string      `json:"op_mode,omitempty"`
+	PoeMode                       string      `json:"poe_mode,omitempty"`
+	PortKeepaliveEnabled          *bool       `json:"port_keepalive_enabled,omitempty"`
+	PortSecurityEnabled           *bool       `json:"port_security_enabled,omitempty"`
+	PortSecurityMacAddress        []string    `json:"port_security_mac_address,omitempty"`
+	QosProfile                    *QoSProfile `json:"qos_profile,omitempty"`
+	SettingPreference             string      `json:"setting_preference,omitempty"`
+	Speed                         *int        `json:"speed,omitempty"`
+	StormctrlBcastEnabled         *bool       `json:"stormctrl_bcast_enabled,omitempty"`
+	StormctrlBcastRate            *int        `json:"stormctrl_bcast_rate,omitempty"`
+	StormctrlMcastEnabled         *bool       `json:"stormctrl_mcast_enabled,omitempty"`
+	StormctrlMcastRate            *int        `json:"stormctrl_mcast_rate,omitempty"`
+	StormctrlUcastEnabled         *bool       `json:"stormctrl_ucast_enabled,omitempty"`
+	StormctrlUcastRate            *int        `json:"stormctrl_ucast_rate,omitempty"`
+	StpPortMode                   *bool       `json:"stp_port_mode,omitempty"`
+	TaggedVlanMgmt                string      `json:"tagged_vlan_mgmt,omitempty"`
 }
 
 // Routing represents a UniFi static route.
@@ -408,18 +408,18 @@ type PortConf struct {
 //   - StaticRouteType: "nexthop-route", "interface-route", "blackhole"
 //   - GatewayType: "default", "switch"
 type Routing struct {
-	ID                 string `json:"_id,omitempty"`
-	SiteID             string `json:"site_id,omitempty"`
-	Name               string `json:"name"`
-	Enabled            *bool  `json:"enabled,omitempty"`
-	Type               string `json:"type,omitempty"`
-	GatewayType        string `json:"gateway_type,omitempty"`
-	GatewayDevice      string `json:"gateway_device,omitempty"`
-	StaticRouteNetwork string `json:"static-route_network,omitempty"`
-	StaticRouteNexthop string `json:"static-route_nexthop,omitempty"`
-	StaticRouteDistance *int  `json:"static-route_distance,omitempty"`
+	ID                   string `json:"_id,omitempty"`
+	SiteID               string `json:"site_id,omitempty"`
+	Name                 string `json:"name"`
+	Enabled              *bool  `json:"enabled,omitempty"`
+	Type                 string `json:"type,omitempty"`
+	GatewayType          string `json:"gateway_type,omitempty"`
+	GatewayDevice        string `json:"gateway_device,omitempty"`
+	StaticRouteNetwork   string `json:"static-route_network,omitempty"`
+	StaticRouteNexthop   string `json:"static-route_nexthop,omitempty"`
+	StaticRouteDistance  *int   `json:"static-route_distance,omitempty"`
 	StaticRouteInterface string `json:"static-route_interface,omitempty"`
-	StaticRouteType    string `json:"static-route_type,omitempty"`
+	StaticRouteType      string `json:"static-route_type,omitempty"`
 }
 
 // UserGroup represents a UniFi user group (bandwidth profile).
@@ -601,6 +601,8 @@ func (s *PolicySchedule) Validate() error {
 //
 // Note: Zone creation may fail on standalone Network Applications (non-UDM) if required
 // system zones (e.g., "hotspot") don't exist. This is a controller-side limitation.
+//
+// Read-only fields (not sent to API): ID, ExternalID, ZoneKey, DefaultZone, AttrNoEdit
 type FirewallZone struct {
 	ID          string   `json:"_id,omitempty"`
 	ExternalID  string   `json:"external_id,omitempty"`
@@ -609,6 +611,17 @@ type FirewallZone struct {
 	DefaultZone *bool    `json:"default_zone,omitempty"`
 	AttrNoEdit  *bool    `json:"attr_no_edit,omitempty"`
 	NetworkIDs  []string `json:"network_ids"`
+}
+
+func (z FirewallZone) MarshalJSON() ([]byte, error) {
+	type writable struct {
+		Name       string   `json:"name"`
+		NetworkIDs []string `json:"network_ids"`
+	}
+	return json.Marshal(writable{
+		Name:       z.Name,
+		NetworkIDs: z.NetworkIDs,
+	})
 }
 
 // StaticDNS represents a static DNS record (v2 API).
@@ -629,50 +642,50 @@ type StaticDNS struct {
 
 // Client represents an active network client (v2 API, read-only).
 type Client struct {
-	ID                     string             `json:"id,omitempty"`
-	MAC                    string             `json:"mac,omitempty"`
-	DisplayName            string             `json:"display_name,omitempty"`
-	Status                 string             `json:"status,omitempty"`
-	Type                   string             `json:"type,omitempty"`
-	IsWired                *bool              `json:"is_wired,omitempty"`
-	IsGuest                *bool              `json:"is_guest,omitempty"`
-	Blocked                *bool              `json:"blocked,omitempty"`
-	NetworkID              string             `json:"network_id,omitempty"`
-	NetworkName            string             `json:"network_name,omitempty"`
-	LastIP                 string             `json:"last_ip,omitempty"`
-	VLAN                   *int               `json:"vlan,omitempty"`
-	OUI                    string             `json:"oui,omitempty"`
-	Uptime                 *int64             `json:"uptime,omitempty"`
-	FirstSeen              *int64             `json:"first_seen,omitempty"`
-	LastSeen               *int64             `json:"last_seen,omitempty"`
-	RxBytes                *int64             `json:"rx_bytes,omitempty"`
-	TxBytes                *int64             `json:"tx_bytes,omitempty"`
-	RxPackets              *int64             `json:"rx_packets,omitempty"`
-	TxPackets              *int64             `json:"tx_packets,omitempty"`
-	WiredRateMbps          *int               `json:"wired_rate_mbps,omitempty"`
-	WifiExperienceScore    *float64           `json:"wifi_experience_score,omitempty"`
-	Satisfaction           *float64           `json:"satisfaction,omitempty"`
-	UserID                 string             `json:"user_id,omitempty"`
-	UsergroupID            string             `json:"usergroup_id,omitempty"`
-	UseFixedIP             *bool              `json:"use_fixedip,omitempty"`
-	FixedIP                string             `json:"fixed_ip,omitempty"`
-	LocalDnsRecord         string             `json:"local_dns_record,omitempty"`
-	LocalDnsRecordEnabled  *bool              `json:"local_dns_record_enabled,omitempty"`
-	Noted                  *bool              `json:"noted,omitempty"`
-	Note                   string             `json:"note,omitempty"`
-	Fingerprint            *ClientFingerprint `json:"fingerprint,omitempty"`
-	LastUplinkMAC          string             `json:"last_uplink_mac,omitempty"`
-	LastUplinkName         string             `json:"last_uplink_name,omitempty"`
-	LastUplinkRemotePort   *int               `json:"last_uplink_remote_port,omitempty"`
-	SwPort                 *int               `json:"sw_port,omitempty"`
-	SiteID                 string             `json:"site_id,omitempty"`
+	ID                    string             `json:"id,omitempty"`
+	MAC                   string             `json:"mac,omitempty"`
+	DisplayName           string             `json:"display_name,omitempty"`
+	Status                string             `json:"status,omitempty"`
+	Type                  string             `json:"type,omitempty"`
+	IsWired               *bool              `json:"is_wired,omitempty"`
+	IsGuest               *bool              `json:"is_guest,omitempty"`
+	Blocked               *bool              `json:"blocked,omitempty"`
+	NetworkID             string             `json:"network_id,omitempty"`
+	NetworkName           string             `json:"network_name,omitempty"`
+	LastIP                string             `json:"last_ip,omitempty"`
+	VLAN                  *int               `json:"vlan,omitempty"`
+	OUI                   string             `json:"oui,omitempty"`
+	Uptime                *int64             `json:"uptime,omitempty"`
+	FirstSeen             *int64             `json:"first_seen,omitempty"`
+	LastSeen              *int64             `json:"last_seen,omitempty"`
+	RxBytes               *int64             `json:"rx_bytes,omitempty"`
+	TxBytes               *int64             `json:"tx_bytes,omitempty"`
+	RxPackets             *int64             `json:"rx_packets,omitempty"`
+	TxPackets             *int64             `json:"tx_packets,omitempty"`
+	WiredRateMbps         *int               `json:"wired_rate_mbps,omitempty"`
+	WifiExperienceScore   *float64           `json:"wifi_experience_score,omitempty"`
+	Satisfaction          *float64           `json:"satisfaction,omitempty"`
+	UserID                string             `json:"user_id,omitempty"`
+	UsergroupID           string             `json:"usergroup_id,omitempty"`
+	UseFixedIP            *bool              `json:"use_fixedip,omitempty"`
+	FixedIP               string             `json:"fixed_ip,omitempty"`
+	LocalDnsRecord        string             `json:"local_dns_record,omitempty"`
+	LocalDnsRecordEnabled *bool              `json:"local_dns_record_enabled,omitempty"`
+	Noted                 *bool              `json:"noted,omitempty"`
+	Note                  string             `json:"note,omitempty"`
+	Fingerprint           *ClientFingerprint `json:"fingerprint,omitempty"`
+	LastUplinkMAC         string             `json:"last_uplink_mac,omitempty"`
+	LastUplinkName        string             `json:"last_uplink_name,omitempty"`
+	LastUplinkRemotePort  *int               `json:"last_uplink_remote_port,omitempty"`
+	SwPort                *int               `json:"sw_port,omitempty"`
+	SiteID                string             `json:"site_id,omitempty"`
 }
 
 // ClientFingerprint contains device identification data.
 type ClientFingerprint struct {
-	HasOverride     *bool `json:"has_override,omitempty"`
-	ComputedDevID   *int  `json:"computed_dev_id,omitempty"`
-	ComputedEngine  *int  `json:"computed_engine,omitempty"`
+	HasOverride    *bool `json:"has_override,omitempty"`
+	ComputedDevID  *int  `json:"computed_dev_id,omitempty"`
+	ComputedEngine *int  `json:"computed_engine,omitempty"`
 }
 
 // DeviceList contains network devices organized by type (v2 API, read-only).
@@ -735,21 +748,21 @@ type DeviceUplink struct {
 // Field value reference:
 //   - OpMode: "switch", "mirror", "aggregate"
 type PortTableEntry struct {
-	PortIdx      *int    `json:"port_idx,omitempty"`
-	Name         string  `json:"name,omitempty"`
-	Media        string  `json:"media,omitempty"`
-	Speed        *int    `json:"speed,omitempty"`
-	FullDuplex   *bool   `json:"full_duplex,omitempty"`
-	Up           *bool   `json:"up,omitempty"`
-	Enable       *bool   `json:"enable,omitempty"`
-	PoeEnable    *bool   `json:"poe_enable,omitempty"`
-	PoeCaps      *int    `json:"poe_caps,omitempty"`
-	RxBytes      *int64  `json:"rx_bytes,omitempty"`
-	TxBytes      *int64  `json:"tx_bytes,omitempty"`
-	Satisfaction *int    `json:"satisfaction,omitempty"`
-	IsUplink     *bool   `json:"is_uplink,omitempty"`
-	PortconfID   string  `json:"portconf_id,omitempty"`
-	OpMode       string  `json:"op_mode,omitempty"`
+	PortIdx      *int   `json:"port_idx,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Media        string `json:"media,omitempty"`
+	Speed        *int   `json:"speed,omitempty"`
+	FullDuplex   *bool  `json:"full_duplex,omitempty"`
+	Up           *bool  `json:"up,omitempty"`
+	Enable       *bool  `json:"enable,omitempty"`
+	PoeEnable    *bool  `json:"poe_enable,omitempty"`
+	PoeCaps      *int   `json:"poe_caps,omitempty"`
+	RxBytes      *int64 `json:"rx_bytes,omitempty"`
+	TxBytes      *int64 `json:"tx_bytes,omitempty"`
+	Satisfaction *int   `json:"satisfaction,omitempty"`
+	IsUplink     *bool  `json:"is_uplink,omitempty"`
+	PortconfID   string `json:"portconf_id,omitempty"`
+	OpMode       string `json:"op_mode,omitempty"`
 }
 
 // RadioTableEntry represents a wireless radio on an access point.
@@ -792,22 +805,22 @@ type VapTableEntry struct {
 //   - Action: "BLOCK", "ALLOW"
 //   - MatchingTarget: "INTERNET", "IP", "DOMAIN", "REGION", "APP"
 type TrafficRule struct {
-	ID               string              `json:"_id,omitempty"`
-	Name             string              `json:"name"`
-	Enabled          *bool               `json:"enabled,omitempty"`
-	Action           string              `json:"action,omitempty"`
-	MatchingTarget   string              `json:"matching_target,omitempty"`
-	TargetDevices    []TrafficRuleTarget `json:"target_devices,omitempty"`
-	Schedule         *PolicySchedule     `json:"schedule,omitempty"`
-	Description      string              `json:"description,omitempty"`
-	AppCategoryIDs   []string            `json:"app_category_ids,omitempty"`
-	AppIDs           []int               `json:"app_ids,omitempty"`
-	Domains          []TrafficDomain     `json:"domains,omitempty"`
-	IPAddresses      []string            `json:"ip_addresses,omitempty"`
-	IPRanges         []string            `json:"ip_ranges,omitempty"`
-	Regions          []string            `json:"regions,omitempty"`
-	NetworkID        string              `json:"network_id,omitempty"`
-	BandwidthLimit   *TrafficBandwidth   `json:"bandwidth_limit,omitempty"`
+	ID             string              `json:"_id,omitempty"`
+	Name           string              `json:"name"`
+	Enabled        *bool               `json:"enabled,omitempty"`
+	Action         string              `json:"action,omitempty"`
+	MatchingTarget string              `json:"matching_target,omitempty"`
+	TargetDevices  []TrafficRuleTarget `json:"target_devices,omitempty"`
+	Schedule       *PolicySchedule     `json:"schedule,omitempty"`
+	Description    string              `json:"description,omitempty"`
+	AppCategoryIDs []string            `json:"app_category_ids,omitempty"`
+	AppIDs         []int               `json:"app_ids,omitempty"`
+	Domains        []TrafficDomain     `json:"domains,omitempty"`
+	IPAddresses    []string            `json:"ip_addresses,omitempty"`
+	IPRanges       []string            `json:"ip_ranges,omitempty"`
+	Regions        []string            `json:"regions,omitempty"`
+	NetworkID      string              `json:"network_id,omitempty"`
+	BandwidthLimit *TrafficBandwidth   `json:"bandwidth_limit,omitempty"`
 }
 
 // TrafficRuleTarget specifies a device target for a traffic rule.
@@ -902,16 +915,16 @@ type ContentFiltering struct {
 //   - Type: "site-to-site", "remote-user"
 //   - Status: "connected", "disconnected"
 type VpnConnection struct {
-	ID              string `json:"_id,omitempty"`
-	Name            string `json:"name,omitempty"`
-	Type            string `json:"type,omitempty"`
-	Status          string `json:"status,omitempty"`
-	LocalIP         string `json:"local_ip,omitempty"`
-	RemoteIP        string `json:"remote_ip,omitempty"`
-	RemoteNetwork   string `json:"remote_network,omitempty"`
-	BytesIn         *int64 `json:"bytes_in,omitempty"`
-	BytesOut        *int64 `json:"bytes_out,omitempty"`
-	ConnectedSince  *int64 `json:"connected_since,omitempty"`
+	ID             string `json:"_id,omitempty"`
+	Name           string `json:"name,omitempty"`
+	Type           string `json:"type,omitempty"`
+	Status         string `json:"status,omitempty"`
+	LocalIP        string `json:"local_ip,omitempty"`
+	RemoteIP       string `json:"remote_ip,omitempty"`
+	RemoteNetwork  string `json:"remote_network,omitempty"`
+	BytesIn        *int64 `json:"bytes_in,omitempty"`
+	BytesOut       *int64 `json:"bytes_out,omitempty"`
+	ConnectedSince *int64 `json:"connected_since,omitempty"`
 }
 
 // VpnConnectionList wraps the VPN connections response.
