@@ -517,6 +517,20 @@ func TestNetworkWANLoadBalanceValidate(t *testing.T) {
 	}
 }
 
+func TestNetworkWANQoSValidate(t *testing.T) {
+	qos := NetworkWANQoS{WANEgressQOS: "normal"}
+	if err := qos.Validate(); err != nil {
+		t.Errorf("Validate() unexpected error: %v", err)
+	}
+}
+
+func TestNetworkWANVLANValidate(t *testing.T) {
+	vlan := NetworkWANVLAN{WANVLANEnabled: BoolPtr(true), WANVLAN: IntPtr(100)}
+	if err := vlan.Validate(); err != nil {
+		t.Errorf("Validate() unexpected error: %v", err)
+	}
+}
+
 func TestPolicyEndpointValidate(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -745,6 +759,79 @@ func TestNetworkRoutingValidate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.routing.Validate()
+			checkError(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestNetworkDHCPBootValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		boot    NetworkDHCPBoot
+		wantErr string
+	}{
+		{"valid empty", NetworkDHCPBoot{}, ""},
+		{"valid boot server", NetworkDHCPBoot{DHCPDBootServer: "192.168.1.1"}, ""},
+		{"valid tftp server", NetworkDHCPBoot{DHCPDTFTPServer: "10.0.0.1"}, ""},
+		{"invalid boot server", NetworkDHCPBoot{DHCPDBootServer: "not-an-ip"}, "dhcpd_boot_server must be a valid IP"},
+		{"invalid tftp server", NetworkDHCPBoot{DHCPDTFTPServer: "bad"}, "dhcpd_tftp_server must be a valid IP"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.boot.Validate()
+			checkError(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestNetworkDHCPNTPValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		ntp     NetworkDHCPNTP
+		wantErr string
+	}{
+		{"valid empty", NetworkDHCPNTP{}, ""},
+		{"valid ntp1", NetworkDHCPNTP{DHCPDNtp1: "192.168.1.1"}, ""},
+		{"valid ntp2", NetworkDHCPNTP{DHCPDNtp2: "10.0.0.1"}, ""},
+		{"invalid ntp1", NetworkDHCPNTP{DHCPDNtp1: "not-an-ip"}, "dhcpd_ntp_1 must be a valid IP"},
+		{"invalid ntp2", NetworkDHCPNTP{DHCPDNtp2: "bad"}, "dhcpd_ntp_2 must be a valid IP"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.ntp.Validate()
+			checkError(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestNetworkIPv6Validate(t *testing.T) {
+	ipv6 := NetworkIPv6{IPv6SettingPreference: "auto"}
+	if err := ipv6.Validate(); err != nil {
+		t.Errorf("Validate() unexpected error: %v", err)
+	}
+}
+
+func TestNetworkMulticastValidate(t *testing.T) {
+	mc := NetworkMulticast{DomainName: "example.local"}
+	if err := mc.Validate(); err != nil {
+		t.Errorf("Validate() unexpected error: %v", err)
+	}
+}
+
+func TestNetworkAccessValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		access  NetworkAccess
+		wantErr string
+	}{
+		{"valid empty", NetworkAccess{}, ""},
+		{"valid IPs", NetworkAccess{NATOutboundIPAddresses: []string{"192.168.1.1", "10.0.0.1"}}, ""},
+		{"invalid IP", NetworkAccess{NATOutboundIPAddresses: []string{"not-an-ip"}}, "invalid IP"},
+		{"mixed valid and invalid", NetworkAccess{NATOutboundIPAddresses: []string{"192.168.1.1", "bad"}}, "invalid IP"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.access.Validate()
 			checkError(t, err, tt.wantErr)
 		})
 	}

@@ -102,6 +102,16 @@ type NetworkWANVLAN struct {
 	WANVLAN        *int  `json:"wan_vlan,omitempty"`
 }
 
+// Validate checks WAN QoS configuration.
+func (q *NetworkWANQoS) Validate() error {
+	return nil
+}
+
+// Validate checks WAN VLAN configuration.
+func (v *NetworkWANVLAN) Validate() error {
+	return nil
+}
+
 // NetworkWAN contains all WAN-specific configuration for a network.
 type NetworkWAN struct {
 	WAN                     string                   `json:"wan,omitempty"`
@@ -148,6 +158,26 @@ type NetworkAccess struct {
 	LteLANEnabled             *bool    `json:"lte_lan_enabled,omitempty"`
 	UpnpLANEnabled            *bool    `json:"upnp_lan_enabled,omitempty"`
 	PptpcServerEnabled        *bool    `json:"pptpc_server_enabled,omitempty"`
+}
+
+// Validate checks IPv6 configuration.
+func (i *NetworkIPv6) Validate() error {
+	return nil
+}
+
+// Validate checks multicast and IGMP configuration.
+func (m *NetworkMulticast) Validate() error {
+	return nil
+}
+
+// Validate checks network access and NAT configuration.
+func (a *NetworkAccess) Validate() error {
+	for _, ip := range a.NATOutboundIPAddresses {
+		if ip != "" && !isValidIP(ip) {
+			return fmt.Errorf("network: nat_outbound_ip_addresses contains invalid IP: %s", ip)
+		}
+	}
+	return nil
 }
 
 // NetworkRouting contains routing and firewall zone configuration.
@@ -1327,6 +1357,28 @@ func (d *NetworkDHCPDNS) Validate() error {
 	return nil
 }
 
+// Validate checks DHCP boot/PXE configuration.
+func (b *NetworkDHCPBoot) Validate() error {
+	if b.DHCPDBootServer != "" && !isValidIP(b.DHCPDBootServer) {
+		return fmt.Errorf("network: dhcpd_boot_server must be a valid IP address")
+	}
+	if b.DHCPDTFTPServer != "" && !isValidIP(b.DHCPDTFTPServer) {
+		return fmt.Errorf("network: dhcpd_tftp_server must be a valid IP address")
+	}
+	return nil
+}
+
+// Validate checks DHCP NTP server configuration.
+func (n *NetworkDHCPNTP) Validate() error {
+	if n.DHCPDNtp1 != "" && !isValidIP(n.DHCPDNtp1) {
+		return fmt.Errorf("network: dhcpd_ntp_1 must be a valid IP address")
+	}
+	if n.DHCPDNtp2 != "" && !isValidIP(n.DHCPDNtp2) {
+		return fmt.Errorf("network: dhcpd_ntp_2 must be a valid IP address")
+	}
+	return nil
+}
+
 // Validate checks DHCP configuration.
 func (d *NetworkDHCP) Validate() error {
 	if d.DHCPDStart != "" && !isValidIP(d.DHCPDStart) {
@@ -1339,6 +1391,12 @@ func (d *NetworkDHCP) Validate() error {
 		return err
 	}
 	if err := d.NetworkDHCPDNS.Validate(); err != nil {
+		return err
+	}
+	if err := d.NetworkDHCPBoot.Validate(); err != nil {
+		return err
+	}
+	if err := d.NetworkDHCPNTP.Validate(); err != nil {
 		return err
 	}
 	return nil
@@ -1377,7 +1435,13 @@ func (w *NetworkWAN) Validate() error {
 	if err := w.NetworkWANIPv6.Validate(); err != nil {
 		return err
 	}
+	if err := w.NetworkWANQoS.Validate(); err != nil {
+		return err
+	}
 	if err := w.NetworkWANLoadBalance.Validate(); err != nil {
+		return err
+	}
+	if err := w.NetworkWANVLAN.Validate(); err != nil {
 		return err
 	}
 	return nil
@@ -1415,6 +1479,15 @@ func (n *Network) Validate() error {
 		return err
 	}
 	if err := n.NetworkRouting.Validate(); err != nil {
+		return err
+	}
+	if err := n.NetworkIPv6.Validate(); err != nil {
+		return err
+	}
+	if err := n.NetworkMulticast.Validate(); err != nil {
+		return err
+	}
+	if err := n.NetworkAccess.Validate(); err != nil {
 		return err
 	}
 	return nil
