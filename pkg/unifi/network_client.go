@@ -107,8 +107,8 @@ type NetworkManager interface {
 	// v2 API - Firewall Zones
 	ListFirewallZones(ctx context.Context) ([]FirewallZone, error)
 	GetFirewallZone(ctx context.Context, id string) (*FirewallZone, error)
-	CreateFirewallZone(ctx context.Context, zone *FirewallZone) (*FirewallZone, error)
-	UpdateFirewallZone(ctx context.Context, id string, zone *FirewallZone) (*FirewallZone, error)
+	CreateFirewallZone(ctx context.Context, zone *FirewallZoneCreateRequest) (*FirewallZone, error)
+	UpdateFirewallZone(ctx context.Context, id string, zone *FirewallZoneUpdateRequest) (*FirewallZone, error)
 	DeleteFirewallZone(ctx context.Context, id string) error
 
 	// v2 API - Static DNS
@@ -1331,7 +1331,7 @@ func (c *NetworkClient) getFirewallZoneByList(ctx context.Context, id string) (*
 	return nil, ErrNotFound
 }
 
-func (c *NetworkClient) CreateFirewallZone(ctx context.Context, zone *FirewallZone) (*FirewallZone, error) {
+func (c *NetworkClient) CreateFirewallZone(ctx context.Context, zone *FirewallZoneCreateRequest) (*FirewallZone, error) {
 	if err := zone.Validate(); err != nil {
 		return nil, err
 	}
@@ -1343,7 +1343,10 @@ func (c *NetworkClient) CreateFirewallZone(ctx context.Context, zone *FirewallZo
 	return &result, nil
 }
 
-func (c *NetworkClient) UpdateFirewallZone(ctx context.Context, id string, zone *FirewallZone) (*FirewallZone, error) {
+func (c *NetworkClient) UpdateFirewallZone(ctx context.Context, id string, zone *FirewallZoneUpdateRequest) (*FirewallZone, error) {
+	if zone.ID == "" {
+		zone.ID = id
+	}
 	if err := zone.Validate(); err != nil {
 		return nil, err
 	}

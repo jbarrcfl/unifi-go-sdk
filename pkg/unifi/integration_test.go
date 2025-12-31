@@ -959,8 +959,9 @@ func TestIntegration_V2_FirewallZones_CRUD(t *testing.T) {
 	})
 
 	name := testName("zone")
-	zone := &FirewallZone{
-		Name: name,
+	zone := &FirewallZoneCreateRequest{
+		Name:       name,
+		NetworkIDs: []string{},
 	}
 
 	created, err := client.CreateFirewallZone(ctx, zone)
@@ -1010,8 +1011,12 @@ func TestIntegration_V2_FirewallZones_CRUD(t *testing.T) {
 	}
 
 	newName := testName("zone_updated")
-	fetched.Name = newName
-	updated, err := client.UpdateFirewallZone(ctx, fetched.ID, fetched)
+	updateReq := &FirewallZoneUpdateRequest{
+		ID:         fetched.ID,
+		Name:       newName,
+		NetworkIDs: fetched.NetworkIDs,
+	}
+	updated, err := client.UpdateFirewallZone(ctx, fetched.ID, updateReq)
 	if err != nil {
 		t.Fatalf("UpdateFirewallZone failed: %v", err)
 	}

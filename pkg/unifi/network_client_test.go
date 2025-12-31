@@ -3071,7 +3071,7 @@ func TestNetworkClientFirewallZones(t *testing.T) {
 				}
 				json.NewEncoder(w).Encode(response)
 			} else if r.Method == "POST" {
-				var zone FirewallZone
+				var zone FirewallZoneCreateRequest
 				json.NewDecoder(r.Body).Decode(&zone)
 				response := map[string]any{
 					"_id":         "newzone",
@@ -3091,7 +3091,7 @@ func TestNetworkClientFirewallZones(t *testing.T) {
 				}
 				json.NewEncoder(w).Encode(response)
 			case "PUT":
-				var zone FirewallZone
+				var zone FirewallZoneUpdateRequest
 				json.NewDecoder(r.Body).Decode(&zone)
 				response := map[string]any{
 					"_id":         "zone1",
@@ -3142,7 +3142,7 @@ func TestNetworkClientFirewallZones(t *testing.T) {
 	})
 
 	t.Run("Create", func(t *testing.T) {
-		zone := &FirewallZone{Name: "DMZ"}
+		zone := &FirewallZoneCreateRequest{Name: "DMZ", NetworkIDs: []string{}}
 		created, err := client.CreateFirewallZone(context.Background(), zone)
 		if err != nil {
 			t.Fatalf("CreateFirewallZone() error = %v", err)
@@ -3156,7 +3156,7 @@ func TestNetworkClientFirewallZones(t *testing.T) {
 	})
 
 	t.Run("Update", func(t *testing.T) {
-		zone := &FirewallZone{Name: "Updated Zone"}
+		zone := &FirewallZoneUpdateRequest{ID: "zone1", Name: "Updated Zone", NetworkIDs: []string{}}
 		updated, err := client.UpdateFirewallZone(context.Background(), "zone1", zone)
 		if err != nil {
 			t.Fatalf("UpdateFirewallZone() error = %v", err)

@@ -23,66 +23,39 @@ func TestUserGroupValidate(t *testing.T) {
 	}
 }
 
-func TestFirewallZoneValidate(t *testing.T) {
+func TestFirewallZoneCreateRequestValidate(t *testing.T) {
 	tests := []struct {
 		name    string
-		zone    FirewallZone
+		req     FirewallZoneCreateRequest
 		wantErr string
 	}{
-		{"valid", FirewallZone{Name: "Test"}, ""},
-		{"missing name", FirewallZone{}, "name is required"},
+		{"valid", FirewallZoneCreateRequest{Name: "Test", NetworkIDs: []string{}}, ""},
+		{"valid with networks", FirewallZoneCreateRequest{Name: "Test", NetworkIDs: []string{"net1"}}, ""},
+		{"missing name", FirewallZoneCreateRequest{NetworkIDs: []string{}}, "name is required"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.zone.Validate()
+			err := tt.req.Validate()
 			checkError(t, err, tt.wantErr)
 		})
 	}
 }
 
-func TestFirewallZoneMarshalJSON(t *testing.T) {
-	zone := FirewallZone{
-		ID:          "zone-123",
-		ExternalID:  "ext-123",
-		Name:        "TestZone",
-		ZoneKey:     StringPtr("internal"),
-		DefaultZone: BoolPtr(true),
-		AttrNoEdit:  BoolPtr(true),
-		NetworkIDs:  []string{"net1", "net2"},
+func TestFirewallZoneUpdateRequestValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		req     FirewallZoneUpdateRequest
+		wantErr string
+	}{
+		{"valid", FirewallZoneUpdateRequest{ID: "123", Name: "Test", NetworkIDs: []string{}}, ""},
+		{"missing id", FirewallZoneUpdateRequest{Name: "Test", NetworkIDs: []string{}}, "id is required"},
+		{"missing name", FirewallZoneUpdateRequest{ID: "123", NetworkIDs: []string{}}, "name is required"},
 	}
-
-	data, err := json.Marshal(zone)
-	if err != nil {
-		t.Fatalf("Marshal() error = %v", err)
-	}
-
-	var result map[string]any
-	if err := json.Unmarshal(data, &result); err != nil {
-		t.Fatalf("Unmarshal() error = %v", err)
-	}
-
-	if _, ok := result["_id"]; ok {
-		t.Error("_id should not be marshaled (read-only)")
-	}
-	if _, ok := result["external_id"]; ok {
-		t.Error("external_id should not be marshaled (read-only)")
-	}
-	if _, ok := result["zone_key"]; ok {
-		t.Error("zone_key should not be marshaled (read-only)")
-	}
-	if _, ok := result["default_zone"]; ok {
-		t.Error("default_zone should not be marshaled (read-only)")
-	}
-	if _, ok := result["attr_no_edit"]; ok {
-		t.Error("attr_no_edit should not be marshaled (read-only)")
-	}
-
-	if result["name"] != "TestZone" {
-		t.Errorf("name = %v, want TestZone", result["name"])
-	}
-	networkIDs, ok := result["network_ids"].([]any)
-	if !ok || len(networkIDs) != 2 {
-		t.Errorf("network_ids = %v, want [net1, net2]", result["network_ids"])
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.req.Validate()
+			checkError(t, err, tt.wantErr)
+		})
 	}
 }
 

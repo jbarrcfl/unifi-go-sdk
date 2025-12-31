@@ -643,15 +643,36 @@ type FirewallZone struct {
 	NetworkIDs  []string `json:"network_ids"`
 }
 
-func (z FirewallZone) MarshalJSON() ([]byte, error) {
-	type writable struct {
-		Name       string   `json:"name"`
-		NetworkIDs []string `json:"network_ids"`
+// FirewallZoneCreateRequest is used for creating firewall zones (POST).
+// zone_key is read-only and set by the controller based on zone name.
+type FirewallZoneCreateRequest struct {
+	Name       string   `json:"name"`
+	NetworkIDs []string `json:"network_ids"`
+}
+
+func (z *FirewallZoneCreateRequest) Validate() error {
+	if z.Name == "" {
+		return fmt.Errorf("firewallzone: name is required")
 	}
-	return json.Marshal(writable{
-		Name:       z.Name,
-		NetworkIDs: z.NetworkIDs,
-	})
+	return nil
+}
+
+// FirewallZoneUpdateRequest is used for updating firewall zones (PUT).
+// The API requires _id in the request body for updates.
+type FirewallZoneUpdateRequest struct {
+	ID         string   `json:"_id"`
+	Name       string   `json:"name"`
+	NetworkIDs []string `json:"network_ids"`
+}
+
+func (z *FirewallZoneUpdateRequest) Validate() error {
+	if z.ID == "" {
+		return fmt.Errorf("firewallzone: id is required for update")
+	}
+	if z.Name == "" {
+		return fmt.Errorf("firewallzone: name is required")
+	}
+	return nil
 }
 
 // StaticDNS represents a static DNS record (v2 API).
@@ -977,14 +998,6 @@ type WanSla struct {
 func (u *UserGroup) Validate() error {
 	if u.Name == "" {
 		return fmt.Errorf("usergroup: name is required")
-	}
-	return nil
-}
-
-// Validate checks that required fields are set and values are valid.
-func (z *FirewallZone) Validate() error {
-	if z.Name == "" {
-		return fmt.Errorf("firewallzone: name is required")
 	}
 	return nil
 }
