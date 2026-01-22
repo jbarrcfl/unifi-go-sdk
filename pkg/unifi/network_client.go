@@ -97,6 +97,10 @@ type NetworkManager interface {
 	UpdateDynamicDNS(ctx context.Context, id string, config *DynamicDNS) (*DynamicDNS, error)
 	DeleteDynamicDNS(ctx context.Context, id string) error
 
+	// Legacy REST API - Device Configuration (port overrides, LED settings, etc.)
+	GetDeviceByMAC(ctx context.Context, mac string) (*DeviceConfig, error)
+	UpdateDevice(ctx context.Context, id string, device *DeviceConfig) (*DeviceConfig, error)
+
 	// v2 API - Firewall Policies (zone-based firewall)
 	ListFirewallPolicies(ctx context.Context) ([]FirewallPolicy, error)
 	GetFirewallPolicy(ctx context.Context, id string) (*FirewallPolicy, error)
@@ -1236,6 +1240,44 @@ func (c *NetworkClient) UpdateDynamicDNS(ctx context.Context, id string, config 
 
 func (c *NetworkClient) DeleteDynamicDNS(ctx context.Context, id string) error {
 	return c.do(ctx, "DELETE", c.restPathWithID("dynamicdns", id), nil, nil)
+}
+
+// Device operations (for port overrides, LED settings, etc.)
+
+// GetDeviceByMAC retrieves a device by its MAC address using the stat/device endpoint.
+// This returns full device state including port_overrides.
+func (c *NetworkClient) GetDeviceByMAC(ctx context.Context, mac string) (*DeviceConfig, error) {
+	var devices []DeviceConfig
+	path := "/proxy/network/api/s/" + url.PathEscape(c.Site) + "/stat/device/" + url.PathEscape(mac)
+	err := c.do(ctx, "GET", path, nil, &devices)
+	if err != nil {
+		return nil, err
+	}
+	if len(devices) == 0 {
+		return nil, ErrNotFound
+	}
+	return &devices[0], nil
+}
+
+// UpdateDevice updates a device's configuration (port_overrides, name, LED settings, etc.).
+// The device ID is required. Only fields that are set will be updated.
+func (c *NetworkClient) UpdateDevice(ctx context.Context, id string, device *DeviceConfig) (*DeviceConfig, error) {
+	if err := device.Validate(); err != nil {
+		return nil, err
+	}
+	var devices []DeviceConfig
+	endpoint := c.restPathWithID("device", id)
+	err := c.do(ctx, "PUT", endpoint, device, &devices)
+	if err != nil {
+		return nil, err
+	}
+	if len(devices) == 0 {
+		if device.MAC != "" {
+			return c.GetDeviceByMAC(ctx, device.MAC)
+		}
+		return nil, &EmptyResponseError{Operation: "update", Resource: "device", Endpoint: endpoint}
+	}
+	return &devices[0], nil
 }
 
 // FirewallPolicy CRUD operations (v2 API)

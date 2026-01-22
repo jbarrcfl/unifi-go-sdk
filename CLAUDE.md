@@ -201,6 +201,7 @@ Both APIs complete:
 - User Groups: `ListUserGroups`, `GetUserGroup`, `CreateUserGroup`, `UpdateUserGroup`, `DeleteUserGroup`
 - RADIUS Profiles: `ListRADIUSProfiles`, `GetRADIUSProfile`, `CreateRADIUSProfile`, `UpdateRADIUSProfile`, `DeleteRADIUSProfile`
 - Dynamic DNS: `ListDynamicDNS`, `GetDynamicDNS`, `CreateDynamicDNS`, `UpdateDynamicDNS`, `DeleteDynamicDNS`
+- Device Configuration: `GetDeviceByMAC`, `UpdateDevice` (port overrides, device settings)
 
 **Network API (v2)**
 - Firewall Policies: `ListFirewallPolicies`, `GetFirewallPolicy`, `CreateFirewallPolicy`, `UpdateFirewallPolicy`, `DeleteFirewallPolicy`

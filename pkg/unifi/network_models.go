@@ -1506,3 +1506,130 @@ func (n *Network) Validate() error {
 	}
 	return nil
 }
+
+// PortOverride represents per-port configuration override on a switch device.
+// When setting_preference is "manual", individual fields are used.
+// When setting_preference is "auto" with portconf_id, the port profile is applied.
+//
+// Field value reference:
+//   - SettingPreference: "auto", "manual"
+//   - PoeMode: "auto", "off", "pasv24", "passthrough"
+//   - OpMode: "switch", "mirror", "aggregate"
+//   - Forward: "all", "native", "customize", "disabled"
+//   - TaggedVlanMgmt: "auto", "block_all"
+type PortOverride struct {
+	PortIdx                       *int     `json:"port_idx,omitempty"`
+	Name                          string   `json:"name,omitempty"`
+	PortconfID                    string   `json:"portconf_id,omitempty"`
+	SettingPreference             string   `json:"setting_preference,omitempty"`
+	PoeMode                       string   `json:"poe_mode,omitempty"`
+	OpMode                        string   `json:"op_mode,omitempty"`
+	AggregateMembers              []int    `json:"aggregate_members,omitempty"`
+	LagIdx                        *int     `json:"lag_idx,omitempty"`
+	Forward                       string   `json:"forward,omitempty"`
+	NativeNetworkconfID           string   `json:"native_networkconf_id,omitempty"`
+	VoiceNetworkconfID            string   `json:"voice_networkconf_id,omitempty"`
+	TaggedNetworkconfIDs          []string `json:"tagged_networkconf_ids,omitempty"`
+	ExcludedNetworkconfIDs        []string `json:"excluded_networkconf_ids,omitempty"`
+	TaggedVlanMgmt                string   `json:"tagged_vlan_mgmt,omitempty"`
+	Autoneg                       *bool    `json:"autoneg,omitempty"`
+	FullDuplex                    *bool    `json:"full_duplex,omitempty"`
+	Speed                         *int     `json:"speed,omitempty"`
+	Isolation                     *bool    `json:"isolation,omitempty"`
+	StpPortMode                   *bool    `json:"stp_port_mode,omitempty"`
+	PortSecurityEnabled           *bool    `json:"port_security_enabled,omitempty"`
+	PortSecurityMacAddress        []string `json:"port_security_mac_address,omitempty"`
+	LldpmedEnabled                *bool    `json:"lldpmed_enabled,omitempty"`
+	EgressRateLimitKbpsEnabled    *bool    `json:"egress_rate_limit_kbps_enabled,omitempty"`
+	EgressRateLimitKbps           *int     `json:"egress_rate_limit_kbps,omitempty"`
+	PortKeepaliveEnabled          *bool    `json:"port_keepalive_enabled,omitempty"`
+	StormctrlBcastEnabled         *bool    `json:"stormctrl_bcast_enabled,omitempty"`
+	StormctrlBcastRate            *int     `json:"stormctrl_bcast_rate,omitempty"`
+	StormctrlMcastEnabled         *bool    `json:"stormctrl_mcast_enabled,omitempty"`
+	StormctrlMcastRate            *int     `json:"stormctrl_mcast_rate,omitempty"`
+	StormctrlUcastEnabled         *bool    `json:"stormctrl_ucast_enabled,omitempty"`
+	StormctrlUcastRate            *int     `json:"stormctrl_ucast_rate,omitempty"`
+	MulticastRouterNetworkconfIDs []string `json:"multicast_router_networkconf_ids,omitempty"`
+}
+
+// Validate checks that PortOverride fields have valid values.
+func (p *PortOverride) Validate() error {
+	if p.PortIdx == nil {
+		return fmt.Errorf("portoverride: port_idx is required")
+	}
+	if p.SettingPreference != "" && !isOneOf(p.SettingPreference, "auto", "manual") {
+		return fmt.Errorf("portoverride: setting_preference must be one of: auto, manual")
+	}
+	if p.PoeMode != "" && !isOneOf(p.PoeMode, "auto", "off", "pasv24", "passthrough") {
+		return fmt.Errorf("portoverride: poe_mode must be one of: auto, off, pasv24, passthrough")
+	}
+	if p.OpMode != "" && !isOneOf(p.OpMode, "switch", "mirror", "aggregate") {
+		return fmt.Errorf("portoverride: op_mode must be one of: switch, mirror, aggregate")
+	}
+	if p.Forward != "" && !isOneOf(p.Forward, "all", "native", "customize", "disabled") {
+		return fmt.Errorf("portoverride: forward must be one of: all, native, customize, disabled")
+	}
+	if p.TaggedVlanMgmt != "" && !isOneOf(p.TaggedVlanMgmt, "auto", "block_all") {
+		return fmt.Errorf("portoverride: tagged_vlan_mgmt must be one of: auto, block_all")
+	}
+	for i, mac := range p.PortSecurityMacAddress {
+		if !isValidMAC(mac) {
+			return fmt.Errorf("portoverride: port_security_mac_address[%d] must be a valid MAC address", i)
+		}
+	}
+	return nil
+}
+
+// DeviceConfigNetwork represents the network configuration for a device.
+type DeviceConfigNetwork struct {
+	Type           string `json:"type,omitempty"`
+	IP             string `json:"ip,omitempty"`
+	Netmask        string `json:"netmask,omitempty"`
+	Gateway        string `json:"gateway,omitempty"`
+	DNS1           string `json:"dns1,omitempty"`
+	DNS2           string `json:"dns2,omitempty"`
+	DNSSuffix      string `json:"dnssuffix,omitempty"`
+	BondingEnabled *bool  `json:"bonding_enabled,omitempty"`
+}
+
+// DeviceConfig represents a UniFi device configuration (legacy REST API).
+// This is used for reading device state and updating device settings like port_overrides.
+//
+// Field value reference:
+//   - Type: "uap" (access point), "usw" (switch), "ugw" (gateway), "uxg" (next-gen gateway), "udm" (dream machine)
+//   - State: 0=offline, 1=connected, 2=pending adoption
+//   - LedOverride: "default", "on", "off"
+type DeviceConfig struct {
+	ID                         string               `json:"_id,omitempty"`
+	SiteID                     string               `json:"site_id,omitempty"`
+	MAC                        string               `json:"mac,omitempty"`
+	Model                      string               `json:"model,omitempty"`
+	Type                       string               `json:"type,omitempty"`
+	Name                       string               `json:"name,omitempty"`
+	Adopted                    *bool                `json:"adopted,omitempty"`
+	State                      *int                 `json:"state,omitempty"`
+	Version                    string               `json:"version,omitempty"`
+	IP                         string               `json:"ip,omitempty"`
+	PortOverrides              []PortOverride       `json:"port_overrides,omitempty"`
+	MgmtNetworkID              string               `json:"mgmt_network_id,omitempty"`
+	ConfigNetwork              *DeviceConfigNetwork `json:"config_network,omitempty"`
+	LedOverride                string               `json:"led_override,omitempty"`
+	LedOverrideColor           string               `json:"led_override_color,omitempty"`
+	LedOverrideColorBrightness *int                 `json:"led_override_color_brightness,omitempty"`
+	OutletOverrides            []json.RawMessage    `json:"outlet_overrides,omitempty"`
+	SNMPContact                string               `json:"snmp_contact,omitempty"`
+	SNMPLocation               string               `json:"snmp_location,omitempty"`
+}
+
+// Validate checks that DeviceConfig fields have valid values.
+func (d *DeviceConfig) Validate() error {
+	if d.LedOverride != "" && !isOneOf(d.LedOverride, "default", "on", "off") {
+		return fmt.Errorf("device: led_override must be one of: default, on, off")
+	}
+	for i, po := range d.PortOverrides {
+		if err := po.Validate(); err != nil {
+			return fmt.Errorf("device: port_overrides[%d]: %w", i, err)
+		}
+	}
+	return nil
+}

@@ -49,6 +49,8 @@ tags:
     description: RADIUS profiles (Legacy REST)
   - name: Dynamic DNS
     description: Dynamic DNS configuration (Legacy REST)
+  - name: Device Configuration
+    description: Device settings and port overrides (Legacy REST)
   - name: Static DNS
     description: Static DNS records (v2 API)
   - name: Clients
@@ -1191,6 +1193,57 @@ paths:
       responses:
         '200':
           description: Config deleted
+
+  # Device Configuration (stat endpoint for reading, rest endpoint for updating)
+  /api/s/{site}/stat/device/{mac}:
+    get:
+      tags: [Device Configuration]
+      summary: Get device by MAC address
+      description: |
+        Retrieves full device state including port_overrides.
+        The MAC address should be in colon-separated format (aa:bb:cc:dd:ee:ff).
+      operationId: getDeviceByMac
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - name: mac
+          in: path
+          required: true
+          description: Device MAC address (colon-separated format)
+          schema:
+            type: string
+            pattern: '^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$'
+      responses:
+        '200':
+          description: Device configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
+
+  /api/s/{site}/rest/device/{id}:
+    put:
+      tags: [Device Configuration]
+      summary: Update device configuration
+      description: |
+        Updates device settings like port_overrides, name, LED settings, etc.
+        Only fields that are set will be updated.
+      operationId: updateDevice
+      parameters:
+        - $ref: '#/components/parameters/siteLegacy'
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceConfig'
+      responses:
+        '200':
+          description: Device updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestResponse'
 
 components:
   parameters:
@@ -2440,6 +2493,193 @@ components:
           type: integer
         threshold_packet_loss:
           type: number
+
+    PortOverride:
+      type: object
+      description: Per-port configuration override on a switch device
+      required:
+        - port_idx
+      properties:
+        port_idx:
+          type: integer
+          description: Port index (1-based)
+        name:
+          type: string
+          description: Custom port name
+        portconf_id:
+          type: string
+          description: Port profile ID (when using a port profile)
+        setting_preference:
+          type: string
+          enum: [auto, manual]
+          description: Whether to use auto or manual settings
+        poe_mode:
+          type: string
+          enum: [auto, off, pasv24, passthrough]
+          description: PoE mode for the port
+        op_mode:
+          type: string
+          enum: [switch, mirror, aggregate]
+          description: Operating mode for the port
+        aggregate_members:
+          type: array
+          items:
+            type: integer
+          description: Port indices for LAG aggregation
+        lag_idx:
+          type: integer
+          description: LAG index for aggregate ports
+        forward:
+          type: string
+          enum: [all, native, customize, disabled]
+          description: VLAN forwarding mode
+        native_networkconf_id:
+          type: string
+          description: Network ID for native VLAN
+        voice_networkconf_id:
+          type: string
+          description: Network ID for voice VLAN
+        tagged_networkconf_ids:
+          type: array
+          items:
+            type: string
+          description: Network IDs for tagged VLANs
+        excluded_networkconf_ids:
+          type: array
+          items:
+            type: string
+          description: Network IDs to exclude
+        tagged_vlan_mgmt:
+          type: string
+          enum: [auto, block_all]
+          description: Tagged VLAN management mode
+        autoneg:
+          type: boolean
+          description: Enable auto-negotiation
+        full_duplex:
+          type: boolean
+          description: Enable full duplex
+        speed:
+          type: integer
+          description: Link speed in Mbps
+        isolation:
+          type: boolean
+          description: Enable port isolation
+        stp_port_mode:
+          type: boolean
+          description: Enable STP on port
+        port_security_enabled:
+          type: boolean
+          description: Enable port security
+        port_security_mac_address:
+          type: array
+          items:
+            type: string
+          description: Allowed MAC addresses for port security
+        lldpmed_enabled:
+          type: boolean
+          description: Enable LLDP-MED
+        egress_rate_limit_kbps_enabled:
+          type: boolean
+          description: Enable egress rate limiting
+        egress_rate_limit_kbps:
+          type: integer
+          description: Egress rate limit in Kbps
+        port_keepalive_enabled:
+          type: boolean
+          description: Enable port keepalive
+        stormctrl_bcast_enabled:
+          type: boolean
+          description: Enable broadcast storm control
+        stormctrl_bcast_rate:
+          type: integer
+          description: Broadcast storm control rate
+        stormctrl_mcast_enabled:
+          type: boolean
+          description: Enable multicast storm control
+        stormctrl_mcast_rate:
+          type: integer
+          description: Multicast storm control rate
+        stormctrl_ucast_enabled:
+          type: boolean
+          description: Enable unicast storm control
+        stormctrl_ucast_rate:
+          type: integer
+          description: Unicast storm control rate
+        multicast_router_networkconf_ids:
+          type: array
+          items:
+            type: string
+          description: Network IDs for multicast router ports
+
+    DeviceConfig:
+      type: object
+      description: UniFi device configuration for port overrides and other settings
+      properties:
+        _id:
+          type: string
+          readOnly: true
+          description: Device ID
+        site_id:
+          type: string
+          readOnly: true
+          description: Site ID
+        mac:
+          type: string
+          readOnly: true
+          description: Device MAC address
+        model:
+          type: string
+          readOnly: true
+          description: Device model
+        type:
+          type: string
+          readOnly: true
+          enum: [uap, usw, ugw, uxg, udm]
+          description: Device type
+        name:
+          type: string
+          description: Device name
+        adopted:
+          type: boolean
+          readOnly: true
+          description: Whether device is adopted
+        state:
+          type: integer
+          readOnly: true
+          description: Device state (0=offline, 1=connected, 2=pending)
+        version:
+          type: string
+          readOnly: true
+          description: Firmware version
+        ip:
+          type: string
+          readOnly: true
+          description: Device IP address
+        port_overrides:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortOverride'
+          description: Per-port configuration overrides
+        mgmt_network_id:
+          type: string
+          description: Management network ID
+        led_override:
+          type: string
+          enum: [default, on, off]
+          description: LED override mode
+        led_override_color:
+          type: string
+          description: LED override color
+        led_override_color_brightness:
+          type: integer
+          description: LED brightness (0-100)
+        snmp_contact:
+          type: string
+          description: SNMP contact
+        snmp_location:
+          type: string
+          description: SNMP location
 
   securitySchemes:
     cookieAuth:

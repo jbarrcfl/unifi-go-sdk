@@ -809,3 +809,66 @@ func TestNetworkAccessValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestPortOverrideValidate(t *testing.T) {
+	portIdx := 1
+	tests := []struct {
+		name    string
+		po      PortOverride
+		wantErr string
+	}{
+		{"valid", PortOverride{PortIdx: &portIdx, Name: "Port 1"}, ""},
+		{"valid with profile", PortOverride{PortIdx: &portIdx, PortconfID: "abc123", SettingPreference: "manual"}, ""},
+		{"missing port_idx", PortOverride{Name: "Port 1"}, "port_idx is required"},
+		{"invalid setting_preference", PortOverride{PortIdx: &portIdx, SettingPreference: "invalid"}, "setting_preference must be one of"},
+		{"invalid poe_mode", PortOverride{PortIdx: &portIdx, PoeMode: "invalid"}, "poe_mode must be one of"},
+		{"valid poe_mode auto", PortOverride{PortIdx: &portIdx, PoeMode: "auto"}, ""},
+		{"valid poe_mode off", PortOverride{PortIdx: &portIdx, PoeMode: "off"}, ""},
+		{"valid poe_mode pasv24", PortOverride{PortIdx: &portIdx, PoeMode: "pasv24"}, ""},
+		{"valid poe_mode passthrough", PortOverride{PortIdx: &portIdx, PoeMode: "passthrough"}, ""},
+		{"invalid op_mode", PortOverride{PortIdx: &portIdx, OpMode: "invalid"}, "op_mode must be one of"},
+		{"valid op_mode switch", PortOverride{PortIdx: &portIdx, OpMode: "switch"}, ""},
+		{"valid op_mode mirror", PortOverride{PortIdx: &portIdx, OpMode: "mirror"}, ""},
+		{"valid op_mode aggregate", PortOverride{PortIdx: &portIdx, OpMode: "aggregate"}, ""},
+		{"invalid forward", PortOverride{PortIdx: &portIdx, Forward: "invalid"}, "forward must be one of"},
+		{"valid forward all", PortOverride{PortIdx: &portIdx, Forward: "all"}, ""},
+		{"valid forward native", PortOverride{PortIdx: &portIdx, Forward: "native"}, ""},
+		{"valid forward customize", PortOverride{PortIdx: &portIdx, Forward: "customize"}, ""},
+		{"valid forward disabled", PortOverride{PortIdx: &portIdx, Forward: "disabled"}, ""},
+		{"invalid tagged_vlan_mgmt", PortOverride{PortIdx: &portIdx, TaggedVlanMgmt: "invalid"}, "tagged_vlan_mgmt must be one of"},
+		{"valid tagged_vlan_mgmt auto", PortOverride{PortIdx: &portIdx, TaggedVlanMgmt: "auto"}, ""},
+		{"valid tagged_vlan_mgmt block_all", PortOverride{PortIdx: &portIdx, TaggedVlanMgmt: "block_all"}, ""},
+		{"invalid mac", PortOverride{PortIdx: &portIdx, PortSecurityMacAddress: []string{"invalid"}}, "port_security_mac_address[0] must be a valid MAC"},
+		{"valid mac", PortOverride{PortIdx: &portIdx, PortSecurityMacAddress: []string{"aa:bb:cc:dd:ee:ff"}}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.po.Validate()
+			checkError(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestDeviceConfigValidate(t *testing.T) {
+	portIdx := 1
+	tests := []struct {
+		name    string
+		device  DeviceConfig
+		wantErr string
+	}{
+		{"valid empty", DeviceConfig{}, ""},
+		{"valid with name", DeviceConfig{Name: "My Switch"}, ""},
+		{"invalid led_override", DeviceConfig{LedOverride: "invalid"}, "led_override must be one of"},
+		{"valid led_override default", DeviceConfig{LedOverride: "default"}, ""},
+		{"valid led_override on", DeviceConfig{LedOverride: "on"}, ""},
+		{"valid led_override off", DeviceConfig{LedOverride: "off"}, ""},
+		{"valid port_overrides", DeviceConfig{PortOverrides: []PortOverride{{PortIdx: &portIdx}}}, ""},
+		{"invalid port_override", DeviceConfig{PortOverrides: []PortOverride{{Name: "Port 1"}}}, "port_overrides[0]: portoverride: port_idx is required"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.device.Validate()
+			checkError(t, err, tt.wantErr)
+		})
+	}
+}

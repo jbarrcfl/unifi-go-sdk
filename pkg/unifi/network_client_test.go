@@ -4594,3 +4594,261 @@ func TestNetworkClientV2UpdateOperations(t *testing.T) {
 		}
 	})
 }
+
+func TestNetworkClientDeviceConfig(t *testing.T) {
+	t.Run("GetDeviceByMAC", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/auth/login":
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/self":
+				w.Header().Set("X-Csrf-Token", "test-csrf-token")
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/stat/device/aa:bb:cc:dd:ee:ff":
+				if r.Method == "GET" {
+					response := map[string]any{
+						"meta": map[string]string{"rc": "ok"},
+						"data": []map[string]any{
+							{
+								"_id":   "device1",
+								"mac":   "aa:bb:cc:dd:ee:ff",
+								"name":  "USW Pro 48",
+								"model": "US48PRO",
+								"type":  "usw",
+								"port_overrides": []map[string]any{
+									{
+										"port_idx": 1,
+										"name":     "Port 1",
+										"poe_mode": "auto",
+									},
+								},
+							},
+						},
+					}
+					json.NewEncoder(w).Encode(response)
+				}
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := NewNetworkClient(NetworkClientConfig{
+			BaseURL:  server.URL,
+			Username: "admin",
+			Password: "password",
+		})
+		client.Login(context.Background())
+
+		device, err := client.GetDeviceByMAC(context.Background(), "aa:bb:cc:dd:ee:ff")
+		if err != nil {
+			t.Fatalf("GetDeviceByMAC() error = %v", err)
+		}
+		if device.ID != "device1" {
+			t.Errorf("expected id 'device1', got '%s'", device.ID)
+		}
+		if device.MAC != "aa:bb:cc:dd:ee:ff" {
+			t.Errorf("expected mac 'aa:bb:cc:dd:ee:ff', got '%s'", device.MAC)
+		}
+		if device.Name != "USW Pro 48" {
+			t.Errorf("expected name 'USW Pro 48', got '%s'", device.Name)
+		}
+		if device.Type != "usw" {
+			t.Errorf("expected type 'usw', got '%s'", device.Type)
+		}
+		if len(device.PortOverrides) != 1 {
+			t.Fatalf("expected 1 port override, got %d", len(device.PortOverrides))
+		}
+		if *device.PortOverrides[0].PortIdx != 1 {
+			t.Errorf("expected port_idx 1, got %d", *device.PortOverrides[0].PortIdx)
+		}
+	})
+
+	t.Run("GetDeviceByMAC_NotFound", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/auth/login":
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/self":
+				w.Header().Set("X-Csrf-Token", "test-csrf-token")
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/stat/device/00:00:00:00:00:00":
+				response := map[string]any{
+					"meta": map[string]string{"rc": "ok"},
+					"data": []map[string]any{},
+				}
+				json.NewEncoder(w).Encode(response)
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := NewNetworkClient(NetworkClientConfig{
+			BaseURL:  server.URL,
+			Username: "admin",
+			Password: "password",
+		})
+		client.Login(context.Background())
+
+		_, err := client.GetDeviceByMAC(context.Background(), "00:00:00:00:00:00")
+		if err == nil {
+			t.Fatal("expected error for non-existent device")
+		}
+		if !errors.Is(err, ErrNotFound) {
+			t.Errorf("expected ErrNotFound, got %v", err)
+		}
+	})
+
+	t.Run("UpdateDevice", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/auth/login":
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/self":
+				w.Header().Set("X-Csrf-Token", "test-csrf-token")
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/rest/device/device1":
+				if r.Method == "PUT" {
+					var device DeviceConfig
+					if err := json.NewDecoder(r.Body).Decode(&device); err != nil {
+						t.Errorf("failed to decode request body: %v", err)
+					}
+					response := map[string]any{
+						"meta": map[string]string{"rc": "ok"},
+						"data": []map[string]any{
+							{
+								"_id":  "device1",
+								"mac":  "aa:bb:cc:dd:ee:ff",
+								"name": device.Name,
+								"port_overrides": []map[string]any{
+									{
+										"port_idx": 1,
+										"name":     "Server Port",
+										"poe_mode": "off",
+									},
+								},
+							},
+						},
+					}
+					json.NewEncoder(w).Encode(response)
+				}
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := NewNetworkClient(NetworkClientConfig{
+			BaseURL:  server.URL,
+			Username: "admin",
+			Password: "password",
+		})
+		client.Login(context.Background())
+
+		portIdx := 1
+		device := &DeviceConfig{
+			Name: "USW Pro 48 Updated",
+			PortOverrides: []PortOverride{
+				{
+					PortIdx: &portIdx,
+					Name:    "Server Port",
+					PoeMode: "off",
+				},
+			},
+		}
+		updated, err := client.UpdateDevice(context.Background(), "device1", device)
+		if err != nil {
+			t.Fatalf("UpdateDevice() error = %v", err)
+		}
+		if updated.Name != "USW Pro 48 Updated" {
+			t.Errorf("expected name 'USW Pro 48 Updated', got '%s'", updated.Name)
+		}
+		if len(updated.PortOverrides) != 1 {
+			t.Fatalf("expected 1 port override, got %d", len(updated.PortOverrides))
+		}
+		if updated.PortOverrides[0].Name != "Server Port" {
+			t.Errorf("expected port name 'Server Port', got '%s'", updated.PortOverrides[0].Name)
+		}
+	})
+
+	t.Run("UpdateDevice_ValidationError", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/auth/login":
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/self":
+				w.Header().Set("X-Csrf-Token", "test-csrf-token")
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := NewNetworkClient(NetworkClientConfig{
+			BaseURL:  server.URL,
+			Username: "admin",
+			Password: "password",
+		})
+		client.Login(context.Background())
+
+		device := &DeviceConfig{
+			PortOverrides: []PortOverride{
+				{Name: "Missing port_idx"},
+			},
+		}
+		_, err := client.UpdateDevice(context.Background(), "device1", device)
+		if err == nil {
+			t.Fatal("expected validation error")
+		}
+		if !strings.Contains(err.Error(), "port_idx is required") {
+			t.Errorf("expected port_idx validation error, got: %v", err)
+		}
+	})
+
+	t.Run("UpdateDevice_EmptyResponseNoMAC", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/auth/login":
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/self":
+				w.Header().Set("X-Csrf-Token", "test-csrf-token")
+				w.WriteHeader(http.StatusOK)
+			case "/proxy/network/api/s/default/rest/device/device1":
+				if r.Method == "PUT" {
+					response := map[string]any{
+						"meta": map[string]string{"rc": "ok"},
+						"data": []map[string]any{},
+					}
+					json.NewEncoder(w).Encode(response)
+				}
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		client, _ := NewNetworkClient(NetworkClientConfig{
+			BaseURL:  server.URL,
+			Username: "admin",
+			Password: "password",
+		})
+		client.Login(context.Background())
+
+		device := &DeviceConfig{
+			Name: "Updated Device",
+		}
+		_, err := client.UpdateDevice(context.Background(), "device1", device)
+		if err == nil {
+			t.Fatal("expected EmptyResponseError")
+		}
+		var emptyErr *EmptyResponseError
+		if !errors.As(err, &emptyErr) {
+			t.Errorf("expected EmptyResponseError, got: %T %v", err, err)
+		}
+		if emptyErr.Operation != "update" || emptyErr.Resource != "device" {
+			t.Errorf("unexpected EmptyResponseError: %v", emptyErr)
+		}
+	})
+}
