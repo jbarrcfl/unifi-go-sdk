@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/resnickio/unifi-go-sdk/pkg/unifi"
+	"github.com/jbarrcfl/unifi-go-sdk/pkg/unifi"
 )
 
 func ExampleNewSiteManagerClient() {

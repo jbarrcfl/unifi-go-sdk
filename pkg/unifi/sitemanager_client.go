@@ -81,10 +81,15 @@ func NewSiteManagerClient(cfg SiteManagerClientConfig) (*SiteManagerClient, erro
 		maxRetryWait = DefaultMaxRetryWait
 	}
 
+	guard, err := newHostGuardTransport(http.DefaultTransport, baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("configuring host guard: %w", err)
+	}
+
 	return &SiteManagerClient{
 		BaseURL:      baseURL,
 		APIKey:       cfg.APIKey,
-		HTTPClient:   &http.Client{Timeout: timeout},
+		HTTPClient:   &http.Client{Timeout: timeout, Transport: guard},
 		Logger:       cfg.Logger,
 		maxRetries:   maxRetries,
 		maxRetryWait: maxRetryWait,

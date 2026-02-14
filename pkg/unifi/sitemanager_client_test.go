@@ -20,6 +20,15 @@ func newTestSiteManagerClient(t *testing.T, apiKey string) *SiteManagerClient {
 	return client
 }
 
+func newTestSiteManagerClientForServer(t *testing.T, apiKey string, serverURL string) *SiteManagerClient {
+	t.Helper()
+	client, err := NewSiteManagerClient(SiteManagerClientConfig{APIKey: apiKey, BaseURL: serverURL})
+	if err != nil {
+		t.Fatalf("NewSiteManagerClient() error = %v", err)
+	}
+	return client
+}
+
 func newTestSiteManagerClientWithConfig(t *testing.T, cfg SiteManagerClientConfig) *SiteManagerClient {
 	t.Helper()
 	client, err := NewSiteManagerClient(cfg)
@@ -104,8 +113,7 @@ func TestListHosts(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	resp, err := client.ListHosts(context.Background(), nil)
 	if err != nil {
@@ -145,8 +153,7 @@ func TestListHostsWithPagination(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	_, err := client.ListHosts(context.Background(), &ListHostsOptions{
 		PageSize:  10,
@@ -176,8 +183,7 @@ func TestGetHost(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	resp, err := client.GetHost(context.Background(), "host-123")
 	if err != nil {
@@ -211,8 +217,7 @@ func TestListSites(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	resp, err := client.ListSites(context.Background(), nil)
 	if err != nil {
@@ -259,8 +264,7 @@ func TestListDevices(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	resp, err := client.ListDevices(context.Background(), nil)
 	if err != nil {
@@ -301,8 +305,7 @@ func TestListDevicesWithHostFilter(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	_, err := client.ListDevices(context.Background(), &ListDevicesOptions{
 		HostIDs: []string{"host-1", "host-2"},
@@ -371,8 +374,7 @@ func TestUnknownErrorCode(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	_, err := client.ListHosts(context.Background(), nil)
 	if err == nil {
@@ -421,8 +423,7 @@ func TestListAllHostsPagination(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	hosts, err := client.ListAllHosts(context.Background())
 	if err != nil {
@@ -463,8 +464,7 @@ func TestListAllHostsMidPaginationError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	hosts, err := client.ListAllHosts(context.Background())
 	if err == nil {
@@ -514,8 +514,7 @@ func TestListAllSitesPagination(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	sites, err := client.ListAllSites(context.Background())
 	if err != nil {
@@ -540,8 +539,7 @@ func TestContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -562,8 +560,7 @@ func TestContextTimeout(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
@@ -585,8 +582,7 @@ func TestMalformedJSONResponse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	_, err := client.ListHosts(context.Background(), nil)
 	if err == nil {
@@ -605,8 +601,7 @@ func TestEmptyResponse(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	resp, err := client.ListHosts(context.Background(), nil)
 	if err != nil {
@@ -618,8 +613,7 @@ func TestEmptyResponse(t *testing.T) {
 }
 
 func TestNetworkError(t *testing.T) {
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = "http://localhost:99999"
+	client := newTestSiteManagerClientForServer(t, "test-key", "http://localhost:99999")
 
 	_, err := client.ListHosts(context.Background(), nil)
 	if err == nil {
@@ -649,8 +643,7 @@ func TestRateLimitRetry(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	resp, err := client.ListHosts(context.Background(), nil)
 	if err != nil {
@@ -701,8 +694,7 @@ func TestRateLimitContextCancellation(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
@@ -992,8 +984,7 @@ func TestRateLimitRetryWithHeader(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	start := time.Now()
 	resp, err := client.ListHosts(context.Background(), nil)
@@ -1110,8 +1101,7 @@ func TestListAllDevicesPagination(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestSiteManagerClient(t, "test-key")
-	client.BaseURL = server.URL
+	client := newTestSiteManagerClientForServer(t, "test-key", server.URL)
 
 	hostDevices, err := client.ListAllDevices(context.Background())
 	if err != nil {

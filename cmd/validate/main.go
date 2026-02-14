@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/resnickio/unifi-go-sdk/pkg/unifi"
+	"github.com/jbarrcfl/unifi-go-sdk/pkg/unifi"
 )
 
 type ValidationResult struct {

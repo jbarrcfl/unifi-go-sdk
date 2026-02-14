@@ -278,6 +278,11 @@ func NewNetworkClient(cfg NetworkClientConfig) (*NetworkClient, error) {
 		},
 	}
 
+	guard, err := newHostGuardTransport(transport, cfg.BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("configuring host guard: %w", err)
+	}
+
 	client := &NetworkClient{
 		BaseURL:      cfg.BaseURL,
 		Site:         site,
@@ -290,7 +295,7 @@ func NewNetworkClient(cfg NetworkClientConfig) (*NetworkClient, error) {
 		HTTPClient: &http.Client{
 			Timeout:   timeout,
 			Jar:       jar,
-			Transport: transport,
+			Transport: guard,
 		},
 	}
 
